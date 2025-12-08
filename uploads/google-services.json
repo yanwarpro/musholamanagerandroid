@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "616835694540",
+    "project_id": "mushola-manager",
+    "storage_bucket": "mushola-manager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:616835694540:android:d88f6d1bb876c4b46ca769",
+        "android_client_info": {
+          "package_name": "com.assidiq.musholamanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwChZ91cXyIYOvWH9jlsu3dnYqTD_GQf4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:616835694540:android:ab53369062a010df6ca769",
+        "android_client_info": {
+          "package_name": "com.yanwarpro.musholamanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwChZ91cXyIYOvWH9jlsu3dnYqTD_GQf4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
