@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { GradientBackground } from './GradientBackground';
 import { GlassCard } from './GlassCard';
@@ -6,46 +6,36 @@ import { PrimaryButton } from './PrimaryButton';
 import { ArrowLeft, Plus, Package } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { InventoryItem } from '@/types';
+import { inventoryService } from '@/services/firebaseService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface InventoryModuleProps {
   onBack: () => void;
 }
 
 export function InventoryModule({ onBack }: InventoryModuleProps) {
+  const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'takmir';
+  
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [category, setCategory] = useState('');
-  const [items, setItems] = useState<InventoryItem[]>([
-    {
-      id: '1',
-      name: 'Prayer Mats',
-      quantity: 50,
-      unit: 'pcs',
-      category: 'Prayer Equipment',
-      lastUpdated: new Date()
-    },
-    {
-      id: '2',
-      name: 'Al-Quran',
-      quantity: 30,
-      unit: 'pcs',
-      category: 'Books',
-      lastUpdated: new Date()
-    },
-    {
-      id: '3',
-      name: 'Cleaning Supplies',
-      quantity: 15,
-      unit: 'sets',
-      category: 'Maintenance',
-      lastUpdated: new Date()
-    }
-  ]);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSaveItem = () => {
+  // Load inventory from Firebase
+  useEffect(() => {
+    const unsubscribe = inventoryService.subscribe((data) => {
+      setItems(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSaveItem = async () => {
     // Validation
     if (!name.trim()) {
       Alert.alert('Validation Error', 'Please enter item name');
@@ -76,24 +66,23 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
 
     try {
       if (selectedItem) {
-        // Update existing item
-        setItems(items.map(item =>
-          item.id === selectedItem.id
-            ? { ...item, name: name.trim(), quantity: parsedQuantity, unit: unit.trim(), category: category.trim(), lastUpdated: new Date() }
-            : item
-        ));
+        // Update existing item in Firebase
+        await inventoryService.update(selectedItem.id, {
+          name: name.trim(),
+          quantity: parsedQuantity,
+          unit: unit.trim(),
+          category: category.trim(),
+        });
         Alert.alert('Success', 'Item updated successfully!');
       } else {
-        // Add new item
-        const newItem: InventoryItem = {
-          id: Date.now().toString(),
+        // Add new item to Firebase
+        await inventoryService.add({
           name: name.trim(),
           quantity: parsedQuantity,
           unit: unit.trim(),
           category: category.trim(),
           lastUpdated: new Date()
-        };
-        setItems([newItem, ...items]);
+        });
         Alert.alert('Success', 'Item added successfully!');
       }
 
@@ -160,10 +149,13 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
               <View key={item.id} className="w-1/2 px-2 mb-4">
                 <TouchableOpacity
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    openModal(item);
+                    if (canEdit) {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      openModal(item);
+                    }
                   }}
-                  activeOpacity={0.8}
+                  activeOpacity={canEdit ? 0.8 : 1}
+                  disabled={!canEdit}
                 >
                   <GlassCard className="p-4">
                     <View 
@@ -193,23 +185,25 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
           </View>
         </ScrollView>
 
-        {/* FAB */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            openModal();
-          }}
-          className="absolute bottom-8 right-6 bg-mint-400 w-16 h-16 rounded-full items-center justify-center"
-          style={{
-            shadowColor: '#7FFFD4',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.5,
-            shadowRadius: 16,
-            elevation: 8,
-          }}
-        >
-          <Plus size={32} color="#0A1628" />
-        </TouchableOpacity>
+        {/* FAB - Only show for admin/takmir */}
+        {canEdit && (
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              openModal();
+            }}
+            className="absolute bottom-8 right-6 bg-mint-400 w-16 h-16 rounded-full items-center justify-center"
+            style={{
+              shadowColor: '#7FFFD4',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.5,
+              shadowRadius: 16,
+              elevation: 8,
+            }}
+          >
+            <Plus size={32} color="#0A1628" />
+          </TouchableOpacity>
+        )}
 
         {/* Item Modal */}
         <Modal
@@ -218,8 +212,8 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
           transparent
           onRequestClose={closeModal}
         >
-          <View className="flex-1 justify-end bg-black/50">
-            <GlassCard className="rounded-t-3xl p-6 min-h-[500px]">
+          <View className="flex-1 justify-end bg-[#0A1628]/40">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 min-h-[500px] border-t border-mint-400/30">
               <Text className="text-white text-2xl font-bold mb-6">
                 {selectedItem ? 'Edit Item' : 'Add New Item'}
               </Text>
@@ -285,7 +279,7 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
                   />
                 </View>
               </View>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
       </View>

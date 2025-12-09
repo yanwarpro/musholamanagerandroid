@@ -11,7 +11,7 @@ export function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>('takmir');
+  const [role, setRole] = useState<UserRole>('jamaah');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
@@ -160,7 +160,21 @@ export function LoginScreen() {
             {isSignUp && (
               <View className="mb-6">
                 <Text className="text-white/70 mb-2 text-sm">Role</Text>
-                <View className="flex-row gap-3">
+                <View className="flex-row gap-2">
+                  <TouchableOpacity
+                    onPress={() => setRole('jamaah')}
+                    className={`flex-1 py-3 rounded-xl border ${
+                      role === 'jamaah' 
+                        ? 'bg-mint-400/20 border-mint-400' 
+                        : 'bg-white/10 border-white/15'
+                    }`}
+                  >
+                    <Text className={`text-center font-semibold ${
+                      role === 'jamaah' ? 'text-mint-400' : 'text-white/70'
+                    }`}>
+                      Jamaah
+                    </Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setRole('takmir')}
                     className={`flex-1 py-3 rounded-xl border ${

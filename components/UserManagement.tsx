@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { GradientBackground } from './GradientBackground';
 import { GlassCard } from './GlassCard';
 import { PrimaryButton } from './PrimaryButton';
 import { ArrowLeft, Search, Shield, User as UserIcon } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { User } from '@/types';
+import { usersService } from '@/services/firebaseService';
 
 interface UserManagementProps {
   onBack: () => void;
@@ -14,42 +15,30 @@ interface UserManagementProps {
 export function UserManagement({ onBack }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      email: 'admin@mushola.com',
-      name: 'Ahmad Fauzi',
-      role: 'admin',
-      createdAt: new Date('2024-01-15')
-    },
-    {
-      id: '2',
-      email: 'takmir1@mushola.com',
-      name: 'Budi Santoso',
-      role: 'takmir',
-      createdAt: new Date('2024-02-01')
-    },
-    {
-      id: '3',
-      email: 'takmir2@mushola.com',
-      name: 'Siti Nurhaliza',
-      role: 'takmir',
-      createdAt: new Date('2024-02-10')
-    }
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load users from Firebase
+  useEffect(() => {
+    const unsubscribe = usersService.subscribe((data) => {
+      setUsers(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleRoleToggle = (user: User) => {
+  const handleRoleToggle = async (user: User) => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const newRole = user.role === 'admin' ? 'takmir' : 'admin';
-      setUsers(users.map(u => 
-        u.id === user.id ? { ...u, role: newRole } : u
-      ));
+      
+      // Update in Firebase
+      await usersService.update(user.id, { role: newRole });
       setSelectedUser(null);
       Alert.alert('Success', `User role changed to ${newRole}`);
     } catch (error) {
@@ -149,8 +138,8 @@ export function UserManagement({ onBack }: UserManagementProps) {
           transparent
           onRequestClose={() => setSelectedUser(null)}
         >
-          <View className="flex-1 justify-center items-center bg-black/70 px-6">
-            <GlassCard className="w-full p-6">
+          <View className="flex-1 justify-center items-center bg-[#0A1628]/40 px-6">
+            <View className="w-full bg-[#0D2B3E] rounded-2xl p-6 border border-mint-400/30">
               <Text className="text-white text-2xl font-bold mb-6">
                 User Details
               </Text>
@@ -219,7 +208,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
                   />
                 </View>
               </View>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
       </View>

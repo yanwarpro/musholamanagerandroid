@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, User, Phone, Calendar, ChevronLeft, ChevronRight, Refr
 import * as Haptics from 'expo-haptics';
 import { SnackProvider } from '@/types';
 import { useSnackProvider } from '@/contexts/SnackProviderContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SnackProviderModuleProps {
   onBack: () => void;
@@ -24,6 +25,9 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
     resetWeek,
     availableYears,
   } = useSnackProvider();
+  
+  const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'takmir';
   
   const schedule = getScheduleForYear(currentYear);
   
@@ -153,12 +157,14 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
             <Text className="text-white text-2xl font-bold flex-1">
               Penyedia Snack
             </Text>
-            <TouchableOpacity 
-              onPress={handleResetWeek}
-              className="bg-white/10 p-2 rounded-full"
-            >
-              <RefreshCw size={20} color="#7FFFD4" />
-            </TouchableOpacity>
+            {canEdit && (
+              <TouchableOpacity 
+                onPress={handleResetWeek}
+                className="bg-white/10 p-2 rounded-full"
+              >
+                <RefreshCw size={20} color="#7FFFD4" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Year Selector */}
@@ -278,23 +284,31 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
                       <Text className="text-white font-semibold">{day.provider1.name}</Text>
                       <Text className="text-white/60 text-sm">{day.provider1.contact}</Text>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveAssignment(day.day, 1)}
-                      className="p-2"
-                    >
-                      <Trash2 size={18} color="#FF6B6B" />
-                    </TouchableOpacity>
+                    {canEdit && (
+                      <TouchableOpacity
+                        onPress={() => handleRemoveAssignment(day.day, 1)}
+                        className="p-2"
+                      >
+                        <Trash2 size={18} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 ) : (
-                  <TouchableOpacity
-                    onPress={() => openAssignModal(day.day, 1)}
-                    className="flex-row items-center bg-white/5 p-3 rounded-xl border border-dashed border-white/20"
-                  >
-                    <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center mr-3">
-                      <Plus size={20} color="#7FFFD4" />
+                  canEdit ? (
+                    <TouchableOpacity
+                      onPress={() => openAssignModal(day.day, 1)}
+                      className="flex-row items-center bg-white/5 p-3 rounded-xl border border-dashed border-white/20"
+                    >
+                      <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center mr-3">
+                        <Plus size={20} color="#7FFFD4" />
+                      </View>
+                      <Text className="text-white/50">Pilih penyedia 1</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View className="flex-row items-center bg-white/5 p-3 rounded-xl">
+                      <Text className="text-white/50">Belum ada penyedia</Text>
                     </View>
-                    <Text className="text-white/50">Pilih penyedia 1</Text>
-                  </TouchableOpacity>
+                  )
                 )}
               </View>
 
@@ -309,23 +323,31 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
                       <Text className="text-white font-semibold">{day.provider2.name}</Text>
                       <Text className="text-white/60 text-sm">{day.provider2.contact}</Text>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveAssignment(day.day, 2)}
-                      className="p-2"
-                    >
-                      <Trash2 size={18} color="#FF6B6B" />
-                    </TouchableOpacity>
+                    {canEdit && (
+                      <TouchableOpacity
+                        onPress={() => handleRemoveAssignment(day.day, 2)}
+                        className="p-2"
+                      >
+                        <Trash2 size={18} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 ) : (
-                  <TouchableOpacity
-                    onPress={() => openAssignModal(day.day, 2)}
-                    className="flex-row items-center bg-white/5 p-3 rounded-xl border border-dashed border-white/20"
-                  >
-                    <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center mr-3">
-                      <Plus size={20} color="#7FFFD4" />
+                  canEdit ? (
+                    <TouchableOpacity
+                      onPress={() => openAssignModal(day.day, 2)}
+                      className="flex-row items-center bg-white/5 p-3 rounded-xl border border-dashed border-white/20"
+                    >
+                      <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center mr-3">
+                        <Plus size={20} color="#7FFFD4" />
+                      </View>
+                      <Text className="text-white/50">Pilih penyedia 2</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View className="flex-row items-center bg-white/5 p-3 rounded-xl">
+                      <Text className="text-white/50">Belum ada penyedia</Text>
                     </View>
-                    <Text className="text-white/50">Pilih penyedia 2</Text>
-                  </TouchableOpacity>
+                  )
                 )}
               </View>
             </GlassCard>
@@ -334,23 +356,25 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
           <View className="h-24" />
         </ScrollView>
 
-        {/* FAB - Add New Provider */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setShowModal(true);
-          }}
-          className="absolute bottom-8 right-6 bg-[#7FFFD4] w-16 h-16 rounded-full items-center justify-center"
-          style={{
-            shadowColor: '#7FFFD4',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.5,
-            shadowRadius: 16,
-            elevation: 8,
-          }}
-        >
-          <Plus size={32} color="#0A1628" />
-        </TouchableOpacity>
+        {/* FAB - Add New Provider - Only for admin/takmir */}
+        {canEdit && (
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setShowModal(true);
+            }}
+            className="absolute bottom-8 right-6 bg-[#7FFFD4] w-16 h-16 rounded-full items-center justify-center"
+            style={{
+              shadowColor: '#7FFFD4',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.5,
+              shadowRadius: 16,
+              elevation: 8,
+            }}
+          >
+            <Plus size={32} color="#0A1628" />
+          </TouchableOpacity>
+        )}
 
         {/* Add Provider Modal */}
         <Modal
@@ -359,8 +383,8 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
           transparent
           onRequestClose={() => setShowModal(false)}
         >
-          <View className="flex-1 justify-end bg-black/50">
-            <GlassCard className="rounded-t-3xl p-6 min-h-[450px]">
+          <View className="flex-1 justify-end bg-[#0A1628]/40">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 min-h-[450px] border-t border-mint-400/30">
               <Text className="text-white text-2xl font-bold mb-6">
                 Tambah Penyedia Snack
               </Text>
@@ -416,7 +440,7 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
                   />
                 </View>
               </View>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
 
@@ -427,8 +451,8 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
           transparent
           onRequestClose={() => setShowAssignModal(false)}
         >
-          <View className="flex-1 justify-end bg-black/50">
-            <GlassCard className="rounded-t-3xl p-6 max-h-[70%]">
+          <View className="flex-1 justify-end bg-[#0A1628]/40">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 max-h-[70%] border-t border-mint-400/30">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-xl font-bold">
                   Pilih Penyedia
@@ -469,19 +493,21 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
                           <Text className="text-white/40 text-xs mt-1">{provider.notes}</Text>
                         )}
                       </View>
-                      <View className="ml-2">
-                        <TouchableOpacity
-                          onPress={() => handleRemoveProvider(provider.id)}
-                          className="p-2"
-                        >
-                          <Trash2 size={18} color="#FF6B6B" />
-                        </TouchableOpacity>
-                      </View>
+                      {canEdit && (
+                        <View className="ml-2">
+                          <TouchableOpacity
+                            onPress={() => handleRemoveProvider(provider.id)}
+                            className="p-2"
+                          >
+                            <Trash2 size={18} color="#FF6B6B" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </TouchableOpacity>
                   ))
                 )}
               </ScrollView>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
       </View>

@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 import { TarawihPerson, DailyTarawihSchedule, TarawihYearlySchedule } from '@/types';
+import { tarawihService } from '@/services/firebaseService';
+import { auth } from '@/config/firebase';
 
 interface TarawihContextType {
   currentYear: number;
@@ -13,6 +15,7 @@ interface TarawihContextType {
   updateDailySchedule: (year: number, day: number, imamId: string, bilalId: string) => void;
   generateSchedule: (year: number) => void;
   availableYears: number[];
+  loading: boolean;
 }
 
 const TarawihContext = createContext<TarawihContextType | undefined>(undefined);
@@ -109,8 +112,60 @@ const generateInitialData = (): { [year: number]: TarawihYearlySchedule } => {
 export function TarawihProvider({ children }: { children: ReactNode }) {
   const [currentYear, setCurrentYear] = useState(2025);
   const [yearlySchedules, setYearlySchedules] = useState<{ [year: number]: TarawihYearlySchedule }>(generateInitialData());
+  const [loading, setLoading] = useState(true);
 
   const availableYears = useMemo(() => Object.keys(yearlySchedules).map(Number).sort(), [yearlySchedules]);
+
+  // Load data from Firebase on mount - only when authenticated
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const loadAllYears = async () => {
+        setLoading(true);
+        const years = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+        const schedules: { [year: number]: TarawihYearlySchedule } = {};
+        
+        for (const year of years) {
+          try {
+            const schedule = await tarawihService.getScheduleForYear(year);
+            if (schedule) {
+              schedules[year] = schedule;
+            } else {
+              const emptySchedule = generateEmptySchedule(year);
+              schedules[year] = emptySchedule;
+              await tarawihService.saveSchedule(emptySchedule);
+            }
+          } catch (error) {
+            console.error(`Error loading tarawih for year ${year}:`, error);
+            schedules[year] = generateEmptySchedule(year);
+          }
+        }
+        
+        setYearlySchedules(schedules);
+        setLoading(false);
+      };
+
+      loadAllYears();
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  // Subscribe to current year changes - only when authenticated
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    const unsubscribe = tarawihService.subscribe(currentYear, (schedule) => {
+      if (schedule) {
+        setYearlySchedules(prev => ({ ...prev, [currentYear]: schedule }));
+      }
+    });
+    return () => unsubscribe();
+  }, [currentYear]);
 
   const getScheduleForYear = (year: number): TarawihYearlySchedule => {
     if (!yearlySchedules[year]) {
@@ -121,50 +176,58 @@ export function TarawihProvider({ children }: { children: ReactNode }) {
     return yearlySchedules[year];
   };
 
+  const saveToFirebase = (year: number, schedule: TarawihYearlySchedule) => {
+    tarawihService.saveSchedule(schedule).catch(console.error);
+  };
+
   const addImam = (year: number, imam: TarawihPerson) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         imams: [...prev[year].imams, imam],
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const removeImam = (year: number, imamId: string) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         imams: prev[year].imams.filter(i => i.id !== imamId),
         dailySchedules: prev[year].dailySchedules.map(d => 
           d.imamId === imamId ? { ...d, imamId: '', imamName: '' } : d
         ),
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const addBilal = (year: number, bilal: TarawihPerson) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         bilals: [...prev[year].bilals, bilal],
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const removeBilal = (year: number, bilalId: string) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         bilals: prev[year].bilals.filter(b => b.id !== bilalId),
         dailySchedules: prev[year].dailySchedules.map(d => 
           d.bilalId === bilalId ? { ...d, bilalId: '', bilalName: '' } : d
         ),
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const updateDailySchedule = (year: number, day: number, imamId: string, bilalId: string) => {
@@ -172,9 +235,8 @@ export function TarawihProvider({ children }: { children: ReactNode }) {
     const imam = schedule.imams.find(i => i.id === imamId);
     const bilal = schedule.bilals.find(b => b.id === bilalId);
 
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         dailySchedules: prev[year].dailySchedules.map(d =>
           d.ramadanDay === day
@@ -187,8 +249,10 @@ export function TarawihProvider({ children }: { children: ReactNode }) {
               }
             : d
         ),
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const generateSchedule = (year: number) => {
@@ -201,9 +265,8 @@ export function TarawihProvider({ children }: { children: ReactNode }) {
     const daysPerImam = Math.ceil(30 / imams.length);
     const daysPerBilal = Math.ceil(30 / bilals.length);
 
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         dailySchedules: prev[year].dailySchedules.map((day, index) => {
           const imamIndex = Math.floor(index / daysPerImam) % imams.length;
@@ -217,8 +280,10 @@ export function TarawihProvider({ children }: { children: ReactNode }) {
             bilalName: bilals[bilalIndex].name,
           };
         }),
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   return (
@@ -235,6 +300,7 @@ export function TarawihProvider({ children }: { children: ReactNode }) {
         updateDailySchedule,
         generateSchedule,
         availableYears,
+        loading,
       }}
     >
       {children}

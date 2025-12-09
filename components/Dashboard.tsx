@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { GradientBackground } from './GradientBackground';
 import { GlassCard } from './GlassCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { transactionsService, usersService, inventoryService } from '@/services/firebaseService';
+import { Transaction, User, InventoryItem } from '@/types';
 import { 
   Wallet, 
   Users, 
@@ -21,6 +23,59 @@ interface DashboardProps {
 
 export function Dashboard({ onNavigate }: DashboardProps) {
   const { user, signOut } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+
+  // Load transactions from Firebase
+  useEffect(() => {
+    const unsubscribe = transactionsService.subscribe((data) => {
+      setTransactions(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load users from Firebase
+  useEffect(() => {
+    const unsubscribe = usersService.subscribe((data) => {
+      setAllUsers(data);
+      setUsersLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load inventory from Firebase
+  useEffect(() => {
+    const unsubscribe = inventoryService.subscribe((data) => {
+      setInventoryItems(data);
+      setInventoryLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Calculate total balance (total income - total expense)
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpense = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalBalance = totalIncome - totalExpense;
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const handleNavigation = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -75,10 +130,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     },
   ];
 
+  // Calculate total assets (sum of all inventory quantities)
+  const totalAssets = inventoryItems.reduce((sum, item) => sum + item.quantity, 0);
+
   const stats = [
-    { label: 'Total Balance', value: 'Rp 15,250,000', icon: TrendingUp },
-    { label: 'Active Users', value: '24', icon: Users },
-    { label: 'Items in Stock', value: '156', icon: Activity },
+    { label: 'Total Balance', value: loading ? 'Loading...' : formatCurrency(totalBalance), icon: TrendingUp },
+    { label: 'Active Users', value: usersLoading ? '...' : allUsers.length.toString(), icon: Users },
+    { label: 'Assets', value: inventoryLoading ? '...' : totalAssets.toString(), icon: Activity },
   ];
 
   return (
@@ -132,7 +190,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </Text>
           <View className="flex-row flex-wrap -mx-2">
             {menuItems
-              .filter(item => !item.adminOnly || user?.role === 'admin')
+              .filter(item => !item.adminOnly || user?.role === 'admin' || user?.role === 'takmir')
               .map((item) => (
                 <View key={item.id} className="w-1/2 px-2 mb-4">
                   <TouchableOpacity

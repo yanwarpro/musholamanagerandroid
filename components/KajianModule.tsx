@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -27,68 +27,24 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { KajianSchedule } from '@/types';
+import { kajianService } from '@/services/firebaseService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface KajianModuleProps {
   onBack: () => void;
 }
 
-const MOCK_KAJIAN: KajianSchedule[] = [
-  {
-    id: '1',
-    title: 'Kajian Fiqih Ibadah',
-    ustadName: 'Ustadz Ahmad Zainuddin',
-    date: new Date('2025-01-15'),
-    time: '19:30',
-    topic: 'Tata Cara Sholat yang Benar',
-    youtubeLink: 'https://youtube.com/watch?v=example1',
-    year: 2025,
-    isRecurring: true,
-    recurringDay: 'Rabu'
-  },
-  {
-    id: '2',
-    title: 'Kajian Tafsir Al-Quran',
-    ustadName: 'Ustadz Muhammad Ridwan',
-    date: new Date('2025-01-18'),
-    time: '08:00',
-    topic: 'Tafsir Surah Al-Baqarah Ayat 1-5',
-    youtubeLink: 'https://youtube.com/watch?v=example2',
-    year: 2025,
-    isRecurring: true,
-    recurringDay: 'Ahad'
-  },
-  {
-    id: '3',
-    title: 'Kajian Akhlak',
-    ustadName: 'Ustadz Hasan Basri',
-    date: new Date('2025-01-20'),
-    time: '16:00',
-    topic: 'Adab Bertetangga dalam Islam',
-    youtubeLink: 'https://youtube.com/watch?v=example3',
-    year: 2025,
-    isRecurring: false
-  },
-  {
-    id: '4',
-    title: 'Kajian Sirah Nabawiyah',
-    ustadName: 'Ustadz Abdullah Hakim',
-    date: new Date('2025-02-05'),
-    time: '19:00',
-    topic: 'Kisah Hijrah Nabi ke Madinah',
-    youtubeLink: 'https://youtube.com/watch?v=example4',
-    year: 2025,
-    isRecurring: true,
-    recurringDay: 'Jumat'
-  },
-];
-
 const YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 
 export function KajianModule({ onBack }: KajianModuleProps) {
-  const [kajianList, setKajianList] = useState<KajianSchedule[]>(MOCK_KAJIAN);
+  const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'takmir';
+  
+  const [kajianList, setKajianList] = useState<KajianSchedule[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showYearFilter, setShowYearFilter] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [newKajian, setNewKajian] = useState({
     title: '',
     ustadName: '',
@@ -99,6 +55,15 @@ export function KajianModule({ onBack }: KajianModuleProps) {
     isRecurring: false,
     recurringDay: ''
   });
+
+  // Load kajian from Firebase
+  useEffect(() => {
+    const unsubscribe = kajianService.subscribe((data) => {
+      setKajianList(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const filteredKajian = kajianList.filter(k => k.year === selectedYear);
 
@@ -121,7 +86,7 @@ export function KajianModule({ onBack }: KajianModuleProps) {
     }
   };
 
-  const handleAddKajian = () => {
+  const handleAddKajian = async () => {
     if (!newKajian.title || !newKajian.ustadName || !newKajian.date || !newKajian.time || !newKajian.topic) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
@@ -129,32 +94,38 @@ export function KajianModule({ onBack }: KajianModuleProps) {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    const kajian: KajianSchedule = {
-      id: Date.now().toString(),
-      title: newKajian.title,
-      ustadName: newKajian.ustadName,
-      date: new Date(newKajian.date),
-      time: newKajian.time,
-      topic: newKajian.topic,
-      youtubeLink: newKajian.youtubeLink,
-      year: new Date(newKajian.date).getFullYear(),
-      isRecurring: newKajian.isRecurring,
-      recurringDay: newKajian.recurringDay || undefined
-    };
+    try {
+      const kajian = {
+        title: newKajian.title,
+        ustadName: newKajian.ustadName,
+        date: new Date(newKajian.date),
+        time: newKajian.time,
+        topic: newKajian.topic,
+        youtubeLink: newKajian.youtubeLink,
+        year: new Date(newKajian.date).getFullYear(),
+        isRecurring: newKajian.isRecurring,
+        recurringDay: newKajian.recurringDay || undefined
+      };
 
-    setKajianList([...kajianList, kajian]);
-    setShowAddModal(false);
-    setNewKajian({
-      title: '',
-      ustadName: '',
-      date: '',
-      time: '',
-      topic: '',
-      youtubeLink: '',
-      isRecurring: false,
-      recurringDay: ''
-    });
-    Alert.alert('Success', 'Kajian schedule added successfully');
+      // Save to Firebase
+      await kajianService.add(kajian);
+
+      setShowAddModal(false);
+      setNewKajian({
+        title: '',
+        ustadName: '',
+        date: '',
+        time: '',
+        topic: '',
+        youtubeLink: '',
+        isRecurring: false,
+        recurringDay: ''
+      });
+      Alert.alert('Success', 'Kajian schedule added successfully');
+    } catch (error) {
+      console.error('Error adding kajian:', error);
+      Alert.alert('Error', 'Failed to add kajian schedule');
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -274,8 +245,8 @@ export function KajianModule({ onBack }: KajianModuleProps) {
           animationType="fade"
           onRequestClose={() => setShowYearFilter(false)}
         >
-          <View className="flex-1 bg-black/60 justify-center items-center px-6">
-            <GlassCard className="w-full p-6">
+          <View className="flex-1 bg-[#0A1628]/40 justify-center items-center px-6">
+            <View className="w-full bg-[#0D2B3E] rounded-2xl p-6 border border-mint-400/30">
               <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-white text-xl font-bold">Pilih Tahun</Text>
                 <TouchableOpacity onPress={() => setShowYearFilter(false)}>
@@ -304,7 +275,7 @@ export function KajianModule({ onBack }: KajianModuleProps) {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </GlassCard>
+            </View>
           </View>
         </Modal>
 
@@ -315,8 +286,8 @@ export function KajianModule({ onBack }: KajianModuleProps) {
           animationType="slide"
           onRequestClose={() => setShowAddModal(false)}
         >
-          <View className="flex-1 bg-black/60 justify-end">
-            <GlassCard className="rounded-t-3xl p-6 max-h-[90%]">
+          <View className="flex-1 bg-[#0A1628]/40 justify-end">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 max-h-[90%] border-t border-mint-400/30">
               <View className="flex-row justify-between items-center mb-6">
                 <Text className="text-white text-xl font-bold">Tambah Jadwal Kajian</Text>
                 <TouchableOpacity onPress={() => setShowAddModal(false)}>
@@ -426,7 +397,7 @@ export function KajianModule({ onBack }: KajianModuleProps) {
                 
                 <View className="h-8" />
               </ScrollView>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
       </View>
