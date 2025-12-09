@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { Transaction } from '@/types';
 import { transactionsService } from '@/services/firebaseService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FinancialModuleProps {
   onBack: () => void;
@@ -32,6 +33,7 @@ const MONTHS = [
 
 export function FinancialModule({ onBack }: FinancialModuleProps) {
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
   const canEdit = user?.role === 'admin' || user?.role === 'takmir';
   
   const [showModal, setShowModal] = useState(false);
@@ -252,28 +254,29 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
         <View className="px-6 pt-16 pb-6">
           <View className="flex-row items-center mb-4">
             <TouchableOpacity onPress={onBack} className="mr-4">
-              <ArrowLeft size={24} color="#fff" />
+              <ArrowLeft size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text className="text-white text-2xl font-bold flex-1">
+            <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold flex-1">
               Financial Management
             </Text>
             <TouchableOpacity 
               onPress={() => setShowFilterModal(true)}
-              className="bg-white/10 p-2 rounded-lg border border-white/15"
+              style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder }}
+              className="p-2 rounded-lg border"
             >
-              <Filter size={20} color="#7FFFD4" />
+              <Filter size={20} color={colors.accent} />
             </TouchableOpacity>
           </View>
 
           {/* Year & Month Filter Display */}
           <View className="flex-row mb-4">
-            <View className="bg-mint-400/20 px-3 py-1 rounded-full mr-2 flex-row items-center">
-              <Calendar size={14} color="#7FFFD4" />
-              <Text className="text-mint-400 text-sm ml-1 font-medium">{selectedYear}</Text>
+            <View style={{ backgroundColor: `${colors.accent}20` }} className="px-3 py-1 rounded-full mr-2 flex-row items-center">
+              <Calendar size={14} color={colors.accent} />
+              <Text style={{ color: colors.accent }} className="text-sm ml-1 font-medium">{selectedYear}</Text>
             </View>
             {selectedMonth > 0 && (
-              <View className="bg-mint-400/20 px-3 py-1 rounded-full flex-row items-center">
-                <Text className="text-mint-400 text-sm font-medium">
+              <View style={{ backgroundColor: `${colors.accent}20` }} className="px-3 py-1 rounded-full flex-row items-center">
+                <Text style={{ color: colors.accent }} className="text-sm font-medium">
                   {MONTHS.find(m => m.value === selectedMonth)?.label}
                 </Text>
               </View>
@@ -282,24 +285,24 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
 
           {/* Balance Card */}
           <GlassCard className="p-6">
-            <Text className="text-white/70 text-sm mb-2">Total Balance</Text>
-            <Text className="text-white text-4xl font-bold mb-4">
+            <Text style={{ color: colors.textSecondary }} className="text-sm mb-2">Total Balance</Text>
+            <Text style={{ color: colors.textPrimary }} className="text-4xl font-bold mb-4">
               {formatCurrency(balance)}
             </Text>
             <View className="flex-row justify-between">
               <View className="flex-1 mr-2">
                 <View className="flex-row items-center mb-1">
-                  <TrendingUp size={16} color="#7FFFD4" />
-                  <Text className="text-white/70 text-xs ml-1">Income</Text>
+                  <TrendingUp size={16} color={colors.accent} />
+                  <Text style={{ color: colors.textSecondary }} className="text-xs ml-1">Income</Text>
                 </View>
-                <Text className="text-mint-400 text-lg font-bold">
+                <Text style={{ color: colors.accent }} className="text-lg font-bold">
                   {formatCurrency(totalIncome)}
                 </Text>
               </View>
               <View className="flex-1 ml-2">
                 <View className="flex-row items-center mb-1">
                   <TrendingDown size={16} color="#FF6B6B" />
-                  <Text className="text-white/70 text-xs ml-1">Expense</Text>
+                  <Text style={{ color: colors.textSecondary }} className="text-xs ml-1">Expense</Text>
                 </View>
                 <Text className="text-red-400 text-lg font-bold">
                   {formatCurrency(totalExpense)}
@@ -311,12 +314,12 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
 
         {/* Transactions List */}
         <ScrollView className="flex-1 px-6">
-          <Text className="text-white text-lg font-bold mb-4">
+          <Text style={{ color: colors.textPrimary }} className="text-lg font-bold mb-4">
             Recent Transactions
           </Text>
           {filteredTransactions.length === 0 ? (
             <GlassCard className="p-6">
-              <Text className="text-white/60 text-center">
+              <Text style={{ color: colors.textMuted }} className="text-center">
                 Tidak ada transaksi untuk periode ini
               </Text>
             </GlassCard>
@@ -332,24 +335,23 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
                 <GlassCard className="p-4 mb-3">
                   <View className="flex-row justify-between items-start">
                     <View className="flex-1">
-                      <Text className="text-white font-semibold text-base mb-1">
+                      <Text style={{ color: colors.textPrimary }} className="font-semibold text-base mb-1">
                         {transaction.category}
                       </Text>
-                      <Text className="text-white/60 text-sm mb-1">
+                      <Text style={{ color: colors.textMuted }} className="text-sm mb-1">
                         {transaction.notes}
                       </Text>
-                      <Text className="text-mint-400/80 text-xs mb-1">
+                      <Text style={{ color: colors.accent, opacity: 0.8 }} className="text-xs mb-1">
                         {transaction.fromAccount} → {transaction.toAccount}
                       </Text>
-                      <Text className="text-white/40 text-xs">
+                      <Text style={{ color: colors.textMuted }} className="text-xs">
                         {transaction.day}/{transaction.month}/{transaction.year}
                       </Text>
                     </View>
                     <View className="items-end">
                       <Text 
-                        className={`text-lg font-bold ${
-                          transaction.type === 'income' ? 'text-mint-400' : 'text-red-400'
-                        }`}
+                        style={{ color: transaction.type === 'income' ? colors.accent : '#F87171' }}
+                        className="text-lg font-bold"
                       >
                         {transaction.type === 'income' ? '+' : '-'}
                         {formatCurrency(transaction.amount)}
@@ -358,13 +360,15 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
                         <View className="flex-row mt-2">
                           <TouchableOpacity 
                             onPress={() => handleEditTransaction(transaction)}
-                            className="bg-white/10 p-2 rounded-lg mr-2"
+                            style={{ backgroundColor: colors.inputBg }}
+                            className="p-2 rounded-lg mr-2"
                           >
-                            <Edit2 size={14} color="#7FFFD4" />
+                            <Edit2 size={14} color={colors.accent} />
                           </TouchableOpacity>
                           <TouchableOpacity 
                             onPress={() => handleDeleteTransaction(transaction)}
-                            className="bg-white/10 p-2 rounded-lg"
+                            style={{ backgroundColor: colors.inputBg }}
+                            className="p-2 rounded-lg"
                           >
                             <Trash2 size={14} color="#FF6B6B" />
                           </TouchableOpacity>
@@ -385,16 +389,17 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setShowModal(true);
             }}
-            className="absolute bottom-8 right-6 bg-mint-400 w-16 h-16 rounded-full items-center justify-center"
             style={{
-              shadowColor: '#7FFFD4',
+              backgroundColor: colors.accent,
+              shadowColor: colors.accent,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.5,
               shadowRadius: 16,
               elevation: 8,
             }}
+            className="absolute bottom-8 right-6 w-16 h-16 rounded-full items-center justify-center"
           >
-            <Plus size={32} color="#0A1628" />
+            <Plus size={32} color={colors.bgPrimary} />
           </TouchableOpacity>
         )}
 
@@ -405,9 +410,9 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
           transparent
           onRequestClose={() => setShowModal(false)}
         >
-          <View className="flex-1 justify-end bg-[#0A1628]/40">
-            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 min-h-[500px] border-t border-mint-400/30">
-              <Text className="text-white text-2xl font-bold mb-6">
+          <View style={{ backgroundColor: colors.overlay }} className="flex-1 justify-end">
+            <View style={{ backgroundColor: colors.bgSecondary, borderTopColor: `${colors.accent}30` }} className="rounded-t-3xl p-6 min-h-[500px] border-t">
+              <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold mb-6">
                 Add Transaction
               </Text>
 
@@ -415,32 +420,32 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
               <View className="flex-row mb-6">
                 <TouchableOpacity
                   onPress={() => setTransactionType('income')}
-                  className={`flex-1 py-3 rounded-xl mr-2 ${
-                    transactionType === 'income' 
-                      ? 'bg-mint-400' 
-                      : 'bg-white/10 border border-white/15'
-                  }`}
+                  style={{
+                    backgroundColor: transactionType === 'income' ? colors.accent : colors.inputBg,
+                    borderColor: colors.inputBorder,
+                    borderWidth: transactionType === 'income' ? 0 : 1,
+                  }}
+                  className="flex-1 py-3 rounded-xl mr-2"
                 >
                   <Text 
-                    className={`text-center font-semibold ${
-                      transactionType === 'income' ? 'text-navy-deep' : 'text-white'
-                    }`}
+                    style={{ color: transactionType === 'income' ? colors.bgPrimary : colors.textPrimary }}
+                    className="text-center font-semibold"
                   >
                     Income
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setTransactionType('expense')}
-                  className={`flex-1 py-3 rounded-xl ml-2 ${
-                    transactionType === 'expense' 
-                      ? 'bg-red-400' 
-                      : 'bg-white/10 border border-white/15'
-                  }`}
+                  style={{
+                    backgroundColor: transactionType === 'expense' ? '#F87171' : colors.inputBg,
+                    borderColor: colors.inputBorder,
+                    borderWidth: transactionType === 'expense' ? 0 : 1,
+                  }}
+                  className="flex-1 py-3 rounded-xl ml-2"
                 >
                   <Text 
-                    className={`text-center font-semibold ${
-                      transactionType === 'expense' ? 'text-white' : 'text-white'
-                    }`}
+                    style={{ color: transactionType === 'expense' ? '#fff' : colors.textPrimary }}
+                    className="text-center font-semibold"
                   >
                     Expense
                   </Text>
@@ -449,11 +454,12 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
 
               {/* Form Fields */}
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Amount (IDR)</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Amount (IDR)</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="0"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="numeric"
@@ -461,22 +467,24 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
               </View>
 
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Category</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Category</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Donation, Utilities"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={category}
                   onChangeText={setCategory}
                 />
               </View>
 
               <View className="mb-6">
-                <Text className="text-white/70 mb-2 text-sm">Notes</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Notes</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="Additional details"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={notes}
                   onChangeText={setNotes}
                   multiline
@@ -486,22 +494,24 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
 
               {/* Account Fields */}
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Dari Rekening</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Dari Rekening</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Kas Masjid, BRI, BSI"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={fromAccount}
                   onChangeText={setFromAccount}
                 />
               </View>
 
               <View className="mb-6">
-                <Text className="text-white/70 mb-2 text-sm">Ke Rekening</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Ke Rekening</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Donatur, Vendor, Kas Masjid"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={toAccount}
                   onChangeText={setToAccount}
                 />
@@ -533,30 +543,30 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
           transparent
           onRequestClose={() => setShowFilterModal(false)}
         >
-          <View className="flex-1 justify-end bg-[#0A1628]/40">
-            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 border-t border-mint-400/30">
-              <Text className="text-white text-2xl font-bold mb-6">
+          <View style={{ backgroundColor: colors.overlay }} className="flex-1 justify-end">
+            <View style={{ backgroundColor: colors.bgSecondary, borderTopColor: `${colors.accent}30` }} className="rounded-t-3xl p-6 border-t">
+              <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold mb-6">
                 Filter Transaksi
               </Text>
 
               {/* Year Selection */}
               <View className="mb-6">
-                <Text className="text-white/70 mb-3 text-sm">Pilih Tahun</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-3 text-sm">Pilih Tahun</Text>
                 <View className="flex-row flex-wrap">
                   {YEARS.map((year) => (
                     <TouchableOpacity
                       key={year}
                       onPress={() => setSelectedYear(year)}
-                      className={`px-4 py-2 rounded-xl mr-2 mb-2 ${
-                        selectedYear === year 
-                          ? 'bg-mint-400' 
-                          : 'bg-white/10 border border-white/15'
-                      }`}
+                      style={{
+                        backgroundColor: selectedYear === year ? colors.accent : colors.inputBg,
+                        borderColor: colors.inputBorder,
+                        borderWidth: selectedYear === year ? 0 : 1,
+                      }}
+                      className="px-4 py-2 rounded-xl mr-2 mb-2"
                     >
                       <Text 
-                        className={`font-semibold ${
-                          selectedYear === year ? 'text-navy-deep' : 'text-white'
-                        }`}
+                        style={{ color: selectedYear === year ? colors.bgPrimary : colors.textPrimary }}
+                        className="font-semibold"
                       >
                         {year}
                       </Text>
@@ -567,23 +577,23 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
 
               {/* Month Selection */}
               <View className="mb-6">
-                <Text className="text-white/70 mb-3 text-sm">Pilih Bulan</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-3 text-sm">Pilih Bulan</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View className="flex-row">
                     {MONTHS.map((month) => (
                       <TouchableOpacity
                         key={month.value}
                         onPress={() => setSelectedMonth(month.value)}
-                        className={`px-4 py-2 rounded-xl mr-2 ${
-                          selectedMonth === month.value 
-                            ? 'bg-mint-400' 
-                            : 'bg-white/10 border border-white/15'
-                        }`}
+                        style={{
+                          backgroundColor: selectedMonth === month.value ? colors.accent : colors.inputBg,
+                          borderColor: colors.inputBorder,
+                          borderWidth: selectedMonth === month.value ? 0 : 1,
+                        }}
+                        className="px-4 py-2 rounded-xl mr-2"
                       >
                         <Text 
-                          className={`font-semibold ${
-                            selectedMonth === month.value ? 'text-navy-deep' : 'text-white'
-                          }`}
+                          style={{ color: selectedMonth === month.value ? colors.bgPrimary : colors.textPrimary }}
+                          className="font-semibold"
                         >
                           {month.label}
                         </Text>
@@ -612,9 +622,9 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
             clearForm();
           }}
         >
-          <View className="flex-1 justify-end bg-[#0A1628]/40">
-            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 min-h-[500px] border-t border-mint-400/30">
-              <Text className="text-white text-2xl font-bold mb-6">
+          <View style={{ backgroundColor: colors.overlay }} className="flex-1 justify-end">
+            <View style={{ backgroundColor: colors.bgSecondary, borderTopColor: `${colors.accent}30` }} className="rounded-t-3xl p-6 min-h-[500px] border-t">
+              <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold mb-6">
                 Edit Transaksi
               </Text>
 
@@ -622,32 +632,32 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
               <View className="flex-row mb-6">
                 <TouchableOpacity
                   onPress={() => setTransactionType('income')}
-                  className={`flex-1 py-3 rounded-xl mr-2 ${
-                    transactionType === 'income' 
-                      ? 'bg-mint-400' 
-                      : 'bg-white/10 border border-white/15'
-                  }`}
+                  style={{
+                    backgroundColor: transactionType === 'income' ? colors.accent : colors.inputBg,
+                    borderColor: colors.inputBorder,
+                    borderWidth: transactionType === 'income' ? 0 : 1,
+                  }}
+                  className="flex-1 py-3 rounded-xl mr-2"
                 >
                   <Text 
-                    className={`text-center font-semibold ${
-                      transactionType === 'income' ? 'text-navy-deep' : 'text-white'
-                    }`}
+                    style={{ color: transactionType === 'income' ? colors.bgPrimary : colors.textPrimary }}
+                    className="text-center font-semibold"
                   >
                     Income
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setTransactionType('expense')}
-                  className={`flex-1 py-3 rounded-xl ml-2 ${
-                    transactionType === 'expense' 
-                      ? 'bg-red-400' 
-                      : 'bg-white/10 border border-white/15'
-                  }`}
+                  style={{
+                    backgroundColor: transactionType === 'expense' ? '#F87171' : colors.inputBg,
+                    borderColor: colors.inputBorder,
+                    borderWidth: transactionType === 'expense' ? 0 : 1,
+                  }}
+                  className="flex-1 py-3 rounded-xl ml-2"
                 >
                   <Text 
-                    className={`text-center font-semibold ${
-                      transactionType === 'expense' ? 'text-white' : 'text-white'
-                    }`}
+                    style={{ color: transactionType === 'expense' ? '#fff' : colors.textPrimary }}
+                    className="text-center font-semibold"
                   >
                     Expense
                   </Text>
@@ -656,11 +666,12 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
 
               {/* Form Fields */}
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Amount (IDR)</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Amount (IDR)</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="0"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="numeric"
@@ -668,22 +679,24 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
               </View>
 
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Category</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Category</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Donation, Utilities"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={category}
                   onChangeText={setCategory}
                 />
               </View>
 
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Notes</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Notes</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="Additional details"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={notes}
                   onChangeText={setNotes}
                   multiline
@@ -692,22 +705,24 @@ export function FinancialModule({ onBack }: FinancialModuleProps) {
               </View>
 
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Dari Rekening</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Dari Rekening</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Kas Masjid, BRI, BSI"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={fromAccount}
                   onChangeText={setFromAccount}
                 />
               </View>
 
               <View className="mb-6">
-                <Text className="text-white/70 mb-2 text-sm">Ke Rekening</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Ke Rekening</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Donatur, Vendor, Kas Masjid"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={toAccount}
                   onChangeText={setToAccount}
                 />

@@ -7,12 +7,14 @@ import * as Haptics from 'expo-haptics';
 import { TadarusScheduleModule } from './TadarusScheduleModule';
 import { SnackProviderModule } from './SnackProviderModule';
 import { TarawihScheduleModule } from './TarawihScheduleModule';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface RamadanModuleProps {
   onBack: () => void;
 }
 
 export function RamadanModule({ onBack }: RamadanModuleProps) {
+  const { colors } = useTheme();
   const [activeSubModule, setActiveSubModule] = useState<string | null>(null);
 
   if (activeSubModule === 'tadarus') {
@@ -33,21 +35,21 @@ export function RamadanModule({ onBack }: RamadanModuleProps) {
       title: 'Tadarus Schedule',
       description: 'Quran reading assignments',
       icon: BookOpen,
-      color: '#7FFFD4'
+      color: colors.accent
     },
     {
       id: 'snack',
       title: 'Snack Providers',
       description: 'Iftar snack volunteers',
       icon: Coffee,
-      color: '#98FFE0'
+      color: colors.accentLight
     },
     {
       id: 'tarawih',
       title: 'Tarawih Schedule',
       description: 'Prayer time management',
       icon: Clock,
-      color: '#7FFFD4'
+      color: colors.accent
     }
   ];
 
@@ -58,18 +60,18 @@ export function RamadanModule({ onBack }: RamadanModuleProps) {
         <View className="px-6 pt-16 pb-6">
           <View className="flex-row items-center mb-4">
             <TouchableOpacity onPress={onBack} className="mr-4">
-              <ArrowLeft size={24} color="#fff" />
+              <ArrowLeft size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text className="text-white text-2xl font-bold flex-1">
+            <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold flex-1">
               Ramadan Programs
             </Text>
           </View>
 
           <GlassCard className="p-6">
-            <Text className="text-white text-lg font-bold mb-2">
+            <Text style={{ color: colors.textPrimary }} className="text-lg font-bold mb-2">
               Special Ramadan Features
             </Text>
-            <Text className="text-white/70 text-sm">
+            <Text style={{ color: colors.textSecondary }} className="text-sm">
               Manage tadarus schedules, snack providers, and tarawih prayers
             </Text>
           </GlassCard>
@@ -96,10 +98,10 @@ export function RamadanModule({ onBack }: RamadanModuleProps) {
                     <module.icon size={28} color={module.color} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-white text-lg font-bold mb-1">
+                    <Text style={{ color: colors.textPrimary }} className="text-lg font-bold mb-1">
                       {module.title}
                     </Text>
-                    <Text className="text-white/60 text-sm">
+                    <Text style={{ color: colors.textMuted }} className="text-sm">
                       {module.description}
                     </Text>
                   </View>

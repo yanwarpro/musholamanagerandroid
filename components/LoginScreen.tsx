@@ -4,6 +4,7 @@ import { GradientBackground } from './GradientBackground';
 import { GlassCard } from './GlassCard';
 import { PrimaryButton } from './PrimaryButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { UserRole } from '@/types';
 
 export function LoginScreen() {
@@ -14,6 +15,7 @@ export function LoginScreen() {
   const [role, setRole] = useState<UserRole>('jamaah');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+  const { colors, isDark } = useTheme();
 
   const handleLogin = async () => {
     // Validation
@@ -106,26 +108,27 @@ export function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View className="items-center mb-12">
-            <Text className="text-4xl font-bold text-white mb-2">
+            <Text style={{ color: colors.textPrimary }} className="text-4xl font-bold mb-2">
               Mushola Manager
             </Text>
-            <Text className="text-mint-400 text-lg">
+            <Text style={{ color: colors.accent }} className="text-lg">
               Management System
             </Text>
           </View>
 
           <GlassCard className="p-8">
-            <Text className="text-2xl font-bold text-white mb-6 text-center">
+            <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold mb-6 text-center">
               {isSignUp ? 'Create Account' : 'Sign In'}
             </Text>
 
             {isSignUp && (
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Full Name</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Full Name</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="Enter your name"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={name}
                   onChangeText={setName}
                 />
@@ -133,11 +136,12 @@ export function LoginScreen() {
             )}
 
             <View className="mb-4">
-              <Text className="text-white/70 mb-2 text-sm">Email</Text>
+              <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Email</Text>
               <TextInput
-                className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                className="border rounded-xl px-4 py-3"
                 placeholder="Enter your email"
-                placeholderTextColor="rgba(255,255,255,0.4)"
+                placeholderTextColor={colors.inputPlaceholder}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -146,11 +150,12 @@ export function LoginScreen() {
             </View>
 
             <View className="mb-4">
-              <Text className="text-white/70 mb-2 text-sm">Password</Text>
+              <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Password</Text>
               <TextInput
-                className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                className="border rounded-xl px-4 py-3"
                 placeholder="Enter your password"
-                placeholderTextColor="rgba(255,255,255,0.4)"
+                placeholderTextColor={colors.inputPlaceholder}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -159,47 +164,41 @@ export function LoginScreen() {
 
             {isSignUp && (
               <View className="mb-6">
-                <Text className="text-white/70 mb-2 text-sm">Role</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Role</Text>
                 <View className="flex-row gap-2">
                   <TouchableOpacity
                     onPress={() => setRole('jamaah')}
-                    className={`flex-1 py-3 rounded-xl border ${
-                      role === 'jamaah' 
-                        ? 'bg-mint-400/20 border-mint-400' 
-                        : 'bg-white/10 border-white/15'
-                    }`}
+                    style={{ 
+                      backgroundColor: role === 'jamaah' ? `${colors.accent}20` : colors.inputBg,
+                      borderColor: role === 'jamaah' ? colors.accent : colors.inputBorder
+                    }}
+                    className="flex-1 py-3 rounded-xl border"
                   >
-                    <Text className={`text-center font-semibold ${
-                      role === 'jamaah' ? 'text-mint-400' : 'text-white/70'
-                    }`}>
+                    <Text style={{ color: role === 'jamaah' ? colors.accent : colors.textSecondary }} className="text-center font-semibold">
                       Jamaah
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setRole('takmir')}
-                    className={`flex-1 py-3 rounded-xl border ${
-                      role === 'takmir' 
-                        ? 'bg-mint-400/20 border-mint-400' 
-                        : 'bg-white/10 border-white/15'
-                    }`}
+                    style={{ 
+                      backgroundColor: role === 'takmir' ? `${colors.accent}20` : colors.inputBg,
+                      borderColor: role === 'takmir' ? colors.accent : colors.inputBorder
+                    }}
+                    className="flex-1 py-3 rounded-xl border"
                   >
-                    <Text className={`text-center font-semibold ${
-                      role === 'takmir' ? 'text-mint-400' : 'text-white/70'
-                    }`}>
+                    <Text style={{ color: role === 'takmir' ? colors.accent : colors.textSecondary }} className="text-center font-semibold">
                       Takmir
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setRole('admin')}
-                    className={`flex-1 py-3 rounded-xl border ${
-                      role === 'admin' 
-                        ? 'bg-mint-400/20 border-mint-400' 
-                        : 'bg-white/10 border-white/15'
-                    }`}
+                    style={{ 
+                      backgroundColor: role === 'admin' ? `${colors.accent}20` : colors.inputBg,
+                      borderColor: role === 'admin' ? colors.accent : colors.inputBorder
+                    }}
+                    className="flex-1 py-3 rounded-xl border"
                   >
-                    <Text className={`text-center font-semibold ${
-                      role === 'admin' ? 'text-mint-400' : 'text-white/70'
-                    }`}>
+                    <Text style={{ color: role === 'admin' ? colors.accent : colors.textSecondary }} className="text-center font-semibold">
                       Admin
                     </Text>
                   </TouchableOpacity>
@@ -217,7 +216,7 @@ export function LoginScreen() {
               onPress={() => setIsSignUp(!isSignUp)}
               className="mt-4"
             >
-              <Text className="text-mint-400 text-center">
+              <Text style={{ color: colors.accent }} className="text-center">
                 {isSignUp 
                   ? 'Already have an account? Sign In' 
                   : "Don't have an account? Sign Up"}
@@ -225,7 +224,7 @@ export function LoginScreen() {
             </TouchableOpacity>
           </GlassCard>
 
-          <Text className="text-white/50 text-center mt-8 text-sm">
+          <Text style={{ color: colors.textMuted }} className="text-center mt-8 text-sm">
             Secure authentication powered by Firebase
           </Text>
         </ScrollView>

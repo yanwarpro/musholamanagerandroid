@@ -7,12 +7,14 @@ import { ArrowLeft, Search, Shield, User as UserIcon } from 'lucide-react-native
 import * as Haptics from 'expo-haptics';
 import { User } from '@/types';
 import { usersService } from '@/services/firebaseService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface UserManagementProps {
   onBack: () => void;
 }
 
 export function UserManagement({ onBack }: UserManagementProps) {
+  const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -54,20 +56,21 @@ export function UserManagement({ onBack }: UserManagementProps) {
         <View className="px-6 pt-16 pb-6">
           <View className="flex-row items-center mb-6">
             <TouchableOpacity onPress={onBack} className="mr-4">
-              <ArrowLeft size={24} color="#fff" />
+              <ArrowLeft size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text className="text-white text-2xl font-bold flex-1">
+            <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold flex-1">
               User Management
             </Text>
           </View>
 
           {/* Search Bar */}
-          <View className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 flex-row items-center">
-            <Search size={20} color="rgba(255,255,255,0.5)" />
+          <View style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder }} className="border rounded-xl px-4 py-3 flex-row items-center">
+            <Search size={20} color={colors.textMuted} />
             <TextInput
-              className="flex-1 ml-3 text-white"
+              style={{ color: colors.textPrimary }}
+              className="flex-1 ml-3"
               placeholder="Search users..."
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.inputPlaceholder}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -76,7 +79,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
 
         {/* Users List */}
         <ScrollView className="flex-1 px-6">
-          <Text className="text-white text-lg font-bold mb-4">
+          <Text style={{ color: colors.textPrimary }} className="text-lg font-bold mb-4">
             All Users ({filteredUsers.length})
           </Text>
           {filteredUsers.map((user) => (
@@ -93,32 +96,30 @@ export function UserManagement({ onBack }: UserManagementProps) {
                   <View 
                     className="w-12 h-12 rounded-full items-center justify-center mr-4"
                     style={{ 
-                      backgroundColor: user.role === 'admin' ? '#7FFFD420' : '#98FFE020' 
+                      backgroundColor: user.role === 'admin' ? `${colors.accent}20` : `${colors.accentLight}20` 
                     }}
                   >
                     {user.role === 'admin' ? (
-                      <Shield size={24} color="#7FFFD4" />
+                      <Shield size={24} color={colors.accent} />
                     ) : (
-                      <UserIcon size={24} color="#98FFE0" />
+                      <UserIcon size={24} color={colors.accentLight} />
                     )}
                   </View>
                   <View className="flex-1">
-                    <Text className="text-white font-semibold text-base mb-1">
+                    <Text style={{ color: colors.textPrimary }} className="font-semibold text-base mb-1">
                       {user.name}
                     </Text>
-                    <Text className="text-white/60 text-sm mb-1">
+                    <Text style={{ color: colors.textMuted }} className="text-sm mb-1">
                       {user.email}
                     </Text>
                     <View className="flex-row items-center">
                       <View 
-                        className={`px-3 py-1 rounded-full ${
-                          user.role === 'admin' ? 'bg-mint-400/20' : 'bg-white/10'
-                        }`}
+                        style={{ backgroundColor: user.role === 'admin' ? `${colors.accent}20` : colors.inputBg }}
+                        className="px-3 py-1 rounded-full"
                       >
                         <Text 
-                          className={`text-xs font-semibold ${
-                            user.role === 'admin' ? 'text-mint-400' : 'text-white/70'
-                          }`}
+                          style={{ color: user.role === 'admin' ? colors.accent : colors.textSecondary }}
+                          className="text-xs font-semibold"
                         >
                           {user.role.toUpperCase()}
                         </Text>
@@ -138,9 +139,9 @@ export function UserManagement({ onBack }: UserManagementProps) {
           transparent
           onRequestClose={() => setSelectedUser(null)}
         >
-          <View className="flex-1 justify-center items-center bg-[#0A1628]/40 px-6">
-            <View className="w-full bg-[#0D2B3E] rounded-2xl p-6 border border-mint-400/30">
-              <Text className="text-white text-2xl font-bold mb-6">
+          <View style={{ backgroundColor: colors.overlay }} className="flex-1 justify-center items-center px-6">
+            <View style={{ backgroundColor: colors.bgSecondary, borderColor: `${colors.accent}30` }} className="w-full rounded-2xl p-6 border">
+              <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold mb-6">
                 User Details
               </Text>
 
@@ -148,34 +149,35 @@ export function UserManagement({ onBack }: UserManagementProps) {
                 <View 
                   className="w-20 h-20 rounded-full items-center justify-center mb-4 self-center"
                   style={{ 
-                    backgroundColor: selectedUser?.role === 'admin' ? '#7FFFD420' : '#98FFE020' 
+                    backgroundColor: selectedUser?.role === 'admin' ? `${colors.accent}20` : `${colors.accentLight}20` 
                   }}
                 >
                   {selectedUser?.role === 'admin' ? (
-                    <Shield size={40} color="#7FFFD4" />
+                    <Shield size={40} color={colors.accent} />
                   ) : (
-                    <UserIcon size={40} color="#98FFE0" />
+                    <UserIcon size={40} color={colors.accentLight} />
                   )}
                 </View>
-                <Text className="text-white text-xl font-bold text-center mb-2">
+                <Text style={{ color: colors.textPrimary }} className="text-xl font-bold text-center mb-2">
                   {selectedUser?.name}
                 </Text>
-                <Text className="text-white/60 text-center mb-4">
+                <Text style={{ color: colors.textMuted }} className="text-center mb-4">
                   {selectedUser?.email}
                 </Text>
               </View>
 
               <View className="mb-6">
-                <Text className="text-white/70 text-sm mb-3">Current Role</Text>
+                <Text style={{ color: colors.textSecondary }} className="text-sm mb-3">Current Role</Text>
                 <View 
-                  className={`p-4 rounded-xl ${
-                    selectedUser?.role === 'admin' ? 'bg-mint-400/20' : 'bg-white/10'
-                  } border border-white/15`}
+                  style={{ 
+                    backgroundColor: selectedUser?.role === 'admin' ? `${colors.accent}20` : colors.inputBg,
+                    borderColor: colors.inputBorder
+                  }}
+                  className="p-4 rounded-xl border"
                 >
                   <Text 
-                    className={`text-center font-bold ${
-                      selectedUser?.role === 'admin' ? 'text-mint-400' : 'text-white'
-                    }`}
+                    style={{ color: selectedUser?.role === 'admin' ? colors.accent : colors.textPrimary }}
+                    className="text-center font-bold"
                   >
                     {selectedUser?.role.toUpperCase()}
                   </Text>
@@ -183,8 +185,8 @@ export function UserManagement({ onBack }: UserManagementProps) {
               </View>
 
               <View className="mb-4">
-                <Text className="text-white/70 text-sm mb-2">Member Since</Text>
-                <Text className="text-white">
+                <Text style={{ color: colors.textSecondary }} className="text-sm mb-2">Member Since</Text>
+                <Text style={{ color: colors.textPrimary }}>
                   {selectedUser?.createdAt.toLocaleDateString('id-ID', {
                     year: 'numeric',
                     month: 'long',

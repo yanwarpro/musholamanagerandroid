@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { InventoryItem } from '@/types';
 import { inventoryService } from '@/services/firebaseService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface InventoryModuleProps {
   onBack: () => void;
@@ -15,6 +16,7 @@ interface InventoryModuleProps {
 
 export function InventoryModule({ onBack }: InventoryModuleProps) {
   const { user } = useAuth();
+  const { colors } = useTheme();
   const canEdit = user?.role === 'admin' || user?.role === 'takmir';
   
   const [showModal, setShowModal] = useState(false);
@@ -121,19 +123,19 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
         <View className="px-6 pt-16 pb-6">
           <View className="flex-row items-center mb-4">
             <TouchableOpacity onPress={onBack} className="mr-4">
-              <ArrowLeft size={24} color="#fff" />
+              <ArrowLeft size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text className="text-white text-2xl font-bold flex-1">
+            <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold flex-1">
               Inventory Management
             </Text>
           </View>
 
           <GlassCard className="p-4">
-            <Text className="text-white/70 text-sm mb-1">Total Items</Text>
-            <Text className="text-white text-3xl font-bold">
+            <Text style={{ color: colors.textSecondary }} className="text-sm mb-1">Total Items</Text>
+            <Text style={{ color: colors.textPrimary }} className="text-3xl font-bold">
               {items.reduce((sum, item) => sum + item.quantity, 0)}
             </Text>
-            <Text className="text-mint-400 text-sm mt-1">
+            <Text style={{ color: colors.accent }} className="text-sm mt-1">
               Across {items.length} categories
             </Text>
           </GlassCard>
@@ -141,7 +143,7 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
 
         {/* Items Grid */}
         <ScrollView className="flex-1 px-6">
-          <Text className="text-white text-lg font-bold mb-4">
+          <Text style={{ color: colors.textPrimary }} className="text-lg font-bold mb-4">
             All Items
           </Text>
           <View className="flex-row flex-wrap -mx-2">
@@ -160,21 +162,21 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
                   <GlassCard className="p-4">
                     <View 
                       className="w-12 h-12 rounded-xl items-center justify-center mb-3"
-                      style={{ backgroundColor: '#7FFFD420' }}
+                      style={{ backgroundColor: `${colors.accent}20` }}
                     >
-                      <Package size={24} color="#7FFFD4" />
+                      <Package size={24} color={colors.accent} />
                     </View>
-                    <Text className="text-white font-bold text-base mb-1">
+                    <Text style={{ color: colors.textPrimary }} className="font-bold text-base mb-1">
                       {item.name}
                     </Text>
-                    <Text className="text-white/60 text-xs mb-2">
+                    <Text style={{ color: colors.textMuted }} className="text-xs mb-2">
                       {item.category}
                     </Text>
                     <View className="flex-row items-baseline">
-                      <Text className="text-mint-400 text-2xl font-bold">
+                      <Text style={{ color: colors.accent }} className="text-2xl font-bold">
                         {item.quantity}
                       </Text>
-                      <Text className="text-white/60 text-sm ml-1">
+                      <Text style={{ color: colors.textMuted }} className="text-sm ml-1">
                         {item.unit}
                       </Text>
                     </View>
@@ -192,16 +194,17 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               openModal();
             }}
-            className="absolute bottom-8 right-6 bg-mint-400 w-16 h-16 rounded-full items-center justify-center"
             style={{
-              shadowColor: '#7FFFD4',
+              backgroundColor: colors.accent,
+              shadowColor: colors.accent,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.5,
               shadowRadius: 16,
               elevation: 8,
             }}
+            className="absolute bottom-8 right-6 w-16 h-16 rounded-full items-center justify-center"
           >
-            <Plus size={32} color="#0A1628" />
+            <Plus size={32} color={colors.bgPrimary} />
           </TouchableOpacity>
         )}
 
@@ -212,18 +215,19 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
           transparent
           onRequestClose={closeModal}
         >
-          <View className="flex-1 justify-end bg-[#0A1628]/40">
-            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 min-h-[500px] border-t border-mint-400/30">
-              <Text className="text-white text-2xl font-bold mb-6">
+          <View style={{ backgroundColor: colors.overlay }} className="flex-1 justify-end">
+            <View style={{ backgroundColor: colors.bgSecondary, borderTopColor: `${colors.accent}30` }} className="rounded-t-3xl p-6 min-h-[500px] border-t">
+              <Text style={{ color: colors.textPrimary }} className="text-2xl font-bold mb-6">
                 {selectedItem ? 'Edit Item' : 'Add New Item'}
               </Text>
 
               <View className="mb-4">
-                <Text className="text-white/70 mb-2 text-sm">Item Name</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Item Name</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Prayer Mats"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={name}
                   onChangeText={setName}
                 />
@@ -231,22 +235,24 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
 
               <View className="flex-row mb-4">
                 <View className="flex-1 mr-2">
-                  <Text className="text-white/70 mb-2 text-sm">Quantity</Text>
+                  <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Quantity</Text>
                   <TextInput
-                    className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                    style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                    className="border rounded-xl px-4 py-3"
                     placeholder="0"
-                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    placeholderTextColor={colors.inputPlaceholder}
                     value={quantity}
                     onChangeText={setQuantity}
                     keyboardType="numeric"
                   />
                 </View>
                 <View className="flex-1 ml-2">
-                  <Text className="text-white/70 mb-2 text-sm">Unit</Text>
+                  <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Unit</Text>
                   <TextInput
-                    className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                    style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                    className="border rounded-xl px-4 py-3"
                     placeholder="pcs, kg, etc"
-                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    placeholderTextColor={colors.inputPlaceholder}
                     value={unit}
                     onChangeText={setUnit}
                   />
@@ -254,11 +260,12 @@ export function InventoryModule({ onBack }: InventoryModuleProps) {
               </View>
 
               <View className="mb-6">
-                <Text className="text-white/70 mb-2 text-sm">Category</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-2 text-sm">Category</Text>
                 <TextInput
-                  className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white"
+                  style={{ backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  className="border rounded-xl px-4 py-3"
                   placeholder="e.g., Prayer Equipment"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={category}
                   onChangeText={setCategory}
                 />

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } fro
 import { GradientBackground } from './GradientBackground';
 import { GlassCard } from './GlassCard';
 import { PrimaryButton } from './PrimaryButton';
-import { ArrowLeft, Plus, User, Phone, Calendar, ChevronLeft, ChevronRight, RefreshCw, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Plus, User, Phone, Calendar, ChevronLeft, ChevronRight, RefreshCw, Trash2, Shuffle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SnackProvider } from '@/types';
 import { useSnackProvider } from '@/contexts/SnackProviderContext';
@@ -23,6 +23,7 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
     assignProvider,
     removeAssignment,
     resetWeek,
+    autoDistributeProviders,
     availableYears,
   } = useSnackProvider();
   
@@ -130,6 +131,29 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
     );
   };
 
+  const handleAutoDistribute = () => {
+    if (schedule.providers.length === 0) {
+      Alert.alert('Error', 'Tidak ada penyedia snack. Tambahkan penyedia terlebih dahulu.');
+      return;
+    }
+    
+    Alert.alert(
+      'Distribusi Otomatis',
+      `Fitur ini akan membagi rata ${schedule.providers.length} penyedia snack ke dalam jadwal 4 minggu (28 hari). Jadwal yang sudah ada akan diganti. Lanjutkan?`,
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Distribusi',
+          onPress: () => {
+            autoDistributeProviders(currentYear);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert('Sukses', 'Jadwal penyedia snack berhasil didistribusikan secara merata!');
+          },
+        },
+      ]
+    );
+  };
+
   const openAssignModal = (day: string, slot: 1 | 2) => {
     setSelectedDay(day);
     setSelectedSlot(slot);
@@ -157,6 +181,14 @@ export function SnackProviderModule({ onBack }: SnackProviderModuleProps) {
             <Text className="text-white text-2xl font-bold flex-1">
               Penyedia Snack
             </Text>
+            {canEdit && (
+              <TouchableOpacity 
+                onPress={handleAutoDistribute}
+                className="bg-white/10 p-2 rounded-full mr-2"
+              >
+                <Shuffle size={20} color="#7FFFD4" />
+              </TouchableOpacity>
+            )}
             {canEdit && (
               <TouchableOpacity 
                 onPress={handleResetWeek}

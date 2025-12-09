@@ -51,6 +51,7 @@ interface SnackProviderContextType {
   assignProvider: (year: number, week: number, day: string, slot: 1 | 2, provider: SnackProvider) => void;
   removeAssignment: (year: number, week: number, day: string, slot: 1 | 2) => void;
   resetWeek: (year: number, week: number) => void;
+  autoDistributeProviders: (year: number) => void;
   availableYears: number[];
   loading: boolean;
 }
@@ -241,6 +242,53 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Auto-distribute providers evenly across 4 weeks (30 days)
+  const autoDistributeProviders = (year: number) => {
+    setYearlySchedules(prev => {
+      const schedule = prev[year];
+      const providers = schedule.providers;
+      
+      if (providers.length === 0) return prev;
+      
+      // Total slots: 4 weeks x 7 days x 2 slots = 56 slots
+      // But Ramadan is 30 days, so we use 30 days x 2 slots = 60 slots max
+      // We'll distribute across 4 weeks (28 days) with 2 slots per day = 56 slots
+      
+      const newWeeklySchedules: { [week: number]: DailySnackProvider[] } = {};
+      let providerIndex = 0;
+      
+      for (let week = 1; week <= 4; week++) {
+        newWeeklySchedules[week] = DAYS_OF_WEEK.map((day) => {
+          // Assign provider1
+          const provider1 = providers[providerIndex % providers.length];
+          providerIndex++;
+          
+          // Assign provider2 (different from provider1 if possible)
+          let provider2: SnackProvider | null = null;
+          if (providers.length > 1) {
+            provider2 = providers[providerIndex % providers.length];
+            providerIndex++;
+          }
+          
+          return {
+            day,
+            date: new Date(),
+            provider1,
+            provider2,
+          };
+        });
+      }
+      
+      const newSchedule = {
+        ...schedule,
+        weeklySchedules: newWeeklySchedules,
+      };
+      
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
+  };
+
   return (
     <SnackProviderContext.Provider
       value={{
@@ -253,6 +301,7 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
         assignProvider,
         removeAssignment,
         resetWeek,
+        autoDistributeProviders,
         availableYears,
         loading,
       }}

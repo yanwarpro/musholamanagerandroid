@@ -1,6 +1,7 @@
 import React from "react";
 import { View, ViewProps } from "react-native";
 import { BlurView } from "expo-blur";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface GlassCardProps extends ViewProps {
   children: React.ReactNode;
@@ -13,14 +14,18 @@ export function GlassCard({
   style,
   ...props
 }: GlassCardProps) {
+  const { colors, isDark } = useTheme();
+  
   return (
     <View
-      className="rounded-2xl overflow-hidden border border-white/15"
+      className="rounded-2xl overflow-hidden"
       style={[
         {
-          shadowColor: "#7FFFD4",
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          shadowColor: colors.cardShadow,
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
+          shadowOpacity: isDark ? 0.15 : 0.1,
           shadowRadius: 32,
           elevation: 8,
         },
@@ -28,7 +33,11 @@ export function GlassCard({
       ]}
       {...props}
     >
-      <BlurView intensity={intensity} tint="dark" className="bg-white/10">
+      <BlurView 
+        intensity={intensity} 
+        tint={colors.blurTint}
+        style={{ backgroundColor: colors.cardBg }}
+      >
         {children}
       </BlurView>
     </View>
