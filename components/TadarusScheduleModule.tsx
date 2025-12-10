@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Dime
 import { GradientBackground } from './GradientBackground';
 import { GlassCard } from './GlassCard';
 import { PrimaryButton } from './PrimaryButton';
-import { ArrowLeft, Plus, BookOpen, Users, TrendingUp, Award, ChevronLeft, ChevronRight, Edit2 } from 'lucide-react-native';
+import { ArrowLeft, Plus, BookOpen, Users, TrendingUp, Award, ChevronLeft, ChevronRight, Edit2, Calendar } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTadarus } from '@/contexts/TadarusContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,8 +15,28 @@ interface TadarusScheduleModuleProps {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
-  const { progress, addDailyEntry, updateDailyEntry, getDailyEntry, getChartData } = useTadarus();
+  const { currentYear, setCurrentYear, availableYears, getScheduleForYear, addDailyEntry, updateDailyEntry, getDailyEntry, getChartData } = useTadarus();
   const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'takmir';
+  
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [showYearFilter, setShowYearFilter] = useState(false);
+  
+  const schedule = getScheduleForYear(selectedYear);
+  const progress = schedule?.progress || {
+    totalMaleJuz: 0,
+    totalFemaleJuz: 0,
+    totalJuz: 0,
+    maleKhatamCount: 0,
+    femaleKhatamCount: 0,
+    totalKhatamCount: 0,
+    completionPercentage: 0,
+    daysCompleted: 0,
+    daysRemaining: 30,
+  };
+  
+  // Generate years from 2024 to 2030
+  const yearOptions = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -25,8 +45,15 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
   const [femaleJuz, setFemaleJuz] = useState('');
   const [currentPage, setCurrentPage] = useState(0); // 0 = day 1-15, 1 = day 16-30
 
-  const chartData = getChartData();
+  const chartData = getChartData(selectedYear);
   const maxJuz = Math.max(...chartData.map(d => d.total), 1);
+
+  const handleYearSelect = (year: number) => {
+    setSelectedYear(year);
+    setCurrentYear(year);
+    setShowYearFilter(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   const handleAddEntry = () => {
     const male = parseFloat(maleJuz) || 0;
@@ -37,7 +64,7 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
       return;
     }
 
-    addDailyEntry(selectedDay, male, female, user?.name || 'Admin');
+    addDailyEntry(selectedYear, selectedDay, male, female, user?.name || 'Admin');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowAddModal(false);
     setMaleJuz('');
@@ -49,7 +76,7 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
     const male = parseFloat(maleJuz) || 0;
     const female = parseFloat(femaleJuz) || 0;
 
-    updateDailyEntry(selectedDay, male, female);
+    updateDailyEntry(selectedYear, selectedDay, male, female);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowEditModal(false);
     setMaleJuz('');
@@ -65,7 +92,7 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
   };
 
   const openEditModal = (day: number) => {
-    const entry = getDailyEntry(day);
+    const entry = getDailyEntry(selectedYear, day);
     setSelectedDay(day);
     setMaleJuz(entry?.maleJuzRead.toString() || '0');
     setFemaleJuz(entry?.femaleJuzRead.toString() || '0');
@@ -88,6 +115,13 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
             <Text className="text-white text-2xl font-bold flex-1">
               Tadarus Ramadan
             </Text>
+            <TouchableOpacity 
+              onPress={() => setShowYearFilter(true)}
+              className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl"
+            >
+              <Calendar size={18} color="#7FFFD4" />
+              <Text className="text-[#7FFFD4] font-semibold ml-2">{selectedYear}</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Khatam Counter - Per Jamaah */}
@@ -260,7 +294,7 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
           <Text className="text-white font-bold text-lg mb-3">Data Harian</Text>
           
           {displayedDays.map((data) => {
-            const entry = getDailyEntry(data.day);
+            const entry = getDailyEntry(selectedYear, data.day);
             const hasData = data.total > 0;
             
             return (
@@ -296,21 +330,27 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
                         <View className="bg-[#7FFFD4]/20 px-3 py-1 rounded-full mr-2">
                           <Text className="text-[#7FFFD4] font-bold">{data.total} juz</Text>
                         </View>
-                        <TouchableOpacity
-                          onPress={() => openEditModal(data.day)}
-                          className="p-2"
-                        >
-                          <Edit2 size={18} color="#7FFFD4" />
-                        </TouchableOpacity>
+                        {canEdit && (
+                          <TouchableOpacity
+                            onPress={() => openEditModal(data.day)}
+                            className="p-2"
+                          >
+                            <Edit2 size={18} color="#7FFFD4" />
+                          </TouchableOpacity>
+                        )}
                       </>
                     ) : (
-                      <TouchableOpacity
-                        onPress={() => openAddModal(data.day)}
-                        className="flex-row items-center bg-white/10 px-3 py-2 rounded-full"
-                      >
-                        <Plus size={16} color="#7FFFD4" />
-                        <Text className="text-[#7FFFD4] text-sm ml-1">Input</Text>
-                      </TouchableOpacity>
+                      canEdit ? (
+                        <TouchableOpacity
+                          onPress={() => openAddModal(data.day)}
+                          className="flex-row items-center bg-white/10 px-3 py-2 rounded-full"
+                        >
+                          <Plus size={16} color="#7FFFD4" />
+                          <Text className="text-[#7FFFD4] text-sm ml-1">Input</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text className="text-white/50 text-sm">Belum ada data</Text>
+                      )
                     )}
                   </View>
                 </View>
@@ -328,8 +368,8 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
           transparent
           onRequestClose={() => setShowAddModal(false)}
         >
-          <View className="flex-1 justify-end bg-black/50">
-            <GlassCard className="rounded-t-3xl p-6">
+          <View className="flex-1 justify-end bg-[#0A1628]/40">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 border-t border-mint-400/30">
               <Text className="text-white text-xl font-bold mb-2">
                 Input Tadarus Hari ke-{selectedDay}
               </Text>
@@ -382,7 +422,7 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
                   />
                 </View>
               </View>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
 
@@ -393,8 +433,8 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
           transparent
           onRequestClose={() => setShowEditModal(false)}
         >
-          <View className="flex-1 justify-end bg-black/50">
-            <GlassCard className="rounded-t-3xl p-6">
+          <View className="flex-1 justify-end bg-[#0A1628]/40">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 border-t border-mint-400/30">
               <Text className="text-white text-xl font-bold mb-2">
                 Edit Tadarus Hari ke-{selectedDay}
               </Text>
@@ -447,7 +487,55 @@ export function TadarusScheduleModule({ onBack }: TadarusScheduleModuleProps) {
                   />
                 </View>
               </View>
-            </GlassCard>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Year Filter Modal */}
+        <Modal
+          visible={showYearFilter}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowYearFilter(false)}
+        >
+          <View className="flex-1 bg-[#0A1628]/40 justify-center items-center px-6">
+            <View className="w-full max-w-sm">
+              <GlassCard className="p-6 bg-[#0A1628]">
+                <Text className="text-white text-xl font-bold mb-4 text-center">
+                  Pilih Tahun
+                </Text>
+                <ScrollView className="max-h-80">
+                  {yearOptions.map((year) => (
+                    <TouchableOpacity
+                      key={year}
+                      onPress={() => handleYearSelect(year)}
+                      className={`p-4 rounded-xl mb-2 ${
+                        selectedYear === year 
+                          ? 'bg-[#7FFFD4]/20 border border-[#7FFFD4]' 
+                          : 'bg-white/10'
+                      }`}
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <Text className={`text-lg font-semibold ${
+                          selectedYear === year ? 'text-[#7FFFD4]' : 'text-white'
+                        }`}>
+                          {year}
+                        </Text>
+                        {selectedYear === year && (
+                          <View className="w-3 h-3 rounded-full bg-[#7FFFD4]" />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  onPress={() => setShowYearFilter(false)}
+                  className="mt-4 p-3 bg-white/10 rounded-xl"
+                >
+                  <Text className="text-white text-center font-semibold">Tutup</Text>
+                </TouchableOpacity>
+              </GlassCard>
+            </View>
           </View>
         </Modal>
       </View>

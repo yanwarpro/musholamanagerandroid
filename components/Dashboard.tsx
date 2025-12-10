@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { GradientBackground } from './GradientBackground';
 import { GlassCard } from './GlassCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { transactionsService, usersService, inventoryService } from '@/services/firebaseService';
+import { Transaction, User, InventoryItem } from '@/types';
 import { 
   Wallet, 
   Users, 
@@ -11,7 +14,9 @@ import {
   LogOut,
   TrendingUp,
   Activity,
-  BookOpen
+  BookOpen,
+  Sun,
+  MoonStar
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -21,6 +26,60 @@ interface DashboardProps {
 
 export function Dashboard({ onNavigate }: DashboardProps) {
   const { user, signOut } = useAuth();
+  const { colors, isDark, toggleTheme } = useTheme();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+
+  // Load transactions from Firebase
+  useEffect(() => {
+    const unsubscribe = transactionsService.subscribe((data) => {
+      setTransactions(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load users from Firebase
+  useEffect(() => {
+    const unsubscribe = usersService.subscribe((data) => {
+      setAllUsers(data);
+      setUsersLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load inventory from Firebase
+  useEffect(() => {
+    const unsubscribe = inventoryService.subscribe((data) => {
+      setInventoryItems(data);
+      setInventoryLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Calculate total balance (total income - total expense)
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpense = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalBalance = totalIncome - totalExpense;
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const handleNavigation = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -41,14 +100,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
       id: 'financial', 
       title: 'Financial', 
       icon: Wallet, 
-      color: '#7FFFD4',
+      color: colors.accent,
       description: 'Track income & expenses'
     },
     { 
       id: 'users', 
       title: 'Users', 
       icon: Users, 
-      color: '#98FFE0',
+      color: colors.accentLight,
       description: 'Manage roles & permissions',
       adminOnly: true
     },
@@ -56,30 +115,38 @@ export function Dashboard({ onNavigate }: DashboardProps) {
       id: 'inventory', 
       title: 'Inventory', 
       icon: Package, 
-      color: '#7FFFD4',
+      color: colors.accent,
       description: 'Stock management'
     },
     { 
       id: 'kajian', 
       title: 'Kajian', 
       icon: BookOpen, 
-      color: '#98FFE0',
+      color: colors.accentLight,
       description: 'Jadwal kajian rutin'
     },
     { 
       id: 'ramadan', 
       title: 'Ramadan', 
       icon: Moon, 
-      color: '#7FFFD4',
+      color: colors.accent,
       description: 'Special programs'
     },
   ];
 
+  // Calculate total assets (sum of all inventory quantities)
+  const totalAssets = inventoryItems.reduce((sum, item) => sum + item.quantity, 0);
+
   const stats = [
-    { label: 'Total Balance', value: 'Rp 15,250,000', icon: TrendingUp },
-    { label: 'Active Users', value: '24', icon: Users },
-    { label: 'Items in Stock', value: '156', icon: Activity },
+    { label: 'Total Balance', value: loading ? 'Loading...' : formatCurrency(totalBalance), icon: TrendingUp },
+    { label: 'Active Users', value: usersLoading ? '...' : allUsers.length.toString(), icon: Users },
+    { label: 'Assets', value: inventoryLoading ? '...' : totalAssets.toString(), icon: Activity },
   ];
+
+  const handleToggleTheme = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleTheme();
+  };
 
   return (
     <GradientBackground>
@@ -88,19 +155,33 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         <View className="px-6 pt-16 pb-6">
           <View className="flex-row justify-between items-center mb-2">
             <View>
-              <Text className="text-white/70 text-sm">Welcome back,</Text>
-              <Text className="text-white text-3xl font-bold mt-1">
+              <Text style={{ color: colors.textSecondary }} className="text-sm">Welcome back,</Text>
+              <Text style={{ color: colors.textPrimary }} className="text-3xl font-bold mt-1">
                 {user?.name}
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={handleSignOut}
-              className="bg-white/10 p-3 rounded-xl border border-white/15"
-            >
-              <LogOut size={24} color="#fff" />
-            </TouchableOpacity>
+            <View className="flex-row">
+              <TouchableOpacity
+                onPress={handleToggleTheme}
+                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', borderColor: colors.cardBorder }}
+                className="p-3 rounded-xl border mr-2"
+              >
+                {isDark ? (
+                  <Sun size={24} color={colors.accent} />
+                ) : (
+                  <MoonStar size={24} color={colors.accent} />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSignOut}
+                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', borderColor: colors.cardBorder }}
+                className="p-3 rounded-xl border"
+              >
+                <LogOut size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text className="text-mint-400 text-sm capitalize">
+          <Text style={{ color: colors.accent }} className="text-sm capitalize">
             {user?.role} Account
           </Text>
         </View>
@@ -113,11 +194,11 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                 key={index}
                 className="p-5 mr-4 min-w-[160px]"
               >
-                <stat.icon size={24} color="#7FFFD4" />
-                <Text className="text-white/70 text-xs mt-3">
+                <stat.icon size={24} color={colors.accent} />
+                <Text style={{ color: colors.textSecondary }} className="text-xs mt-3">
                   {stat.label}
                 </Text>
-                <Text className="text-white text-xl font-bold mt-1">
+                <Text style={{ color: colors.textPrimary }} className="text-xl font-bold mt-1">
                   {stat.value}
                 </Text>
               </GlassCard>
@@ -127,12 +208,12 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
         {/* Menu Grid */}
         <View className="px-6 pb-8">
-          <Text className="text-white text-xl font-bold mb-4">
+          <Text style={{ color: colors.textPrimary }} className="text-xl font-bold mb-4">
             Quick Access
           </Text>
           <View className="flex-row flex-wrap -mx-2">
             {menuItems
-              .filter(item => !item.adminOnly || user?.role === 'admin')
+              .filter(item => !item.adminOnly || user?.role === 'admin' || user?.role === 'takmir')
               .map((item) => (
                 <View key={item.id} className="w-1/2 px-2 mb-4">
                   <TouchableOpacity
@@ -146,10 +227,10 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                       >
                         <item.icon size={24} color={item.color} />
                       </View>
-                      <Text className="text-white text-lg font-bold mb-1">
+                      <Text style={{ color: colors.textPrimary }} className="text-lg font-bold mb-1">
                         {item.title}
                       </Text>
-                      <Text className="text-white/60 text-xs">
+                      <Text style={{ color: colors.textMuted }} className="text-xs">
                         {item.description}
                       </Text>
                     </GlassCard>

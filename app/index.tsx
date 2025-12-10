@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { SnackProviderProvider } from '@/contexts/SnackProviderContext';
 import { TadarusProvider } from '@/contexts/TadarusContext';
 import { TarawihProvider } from '@/contexts/TarawihContext';
@@ -14,12 +15,13 @@ import { KajianModule } from '@/components/KajianModule';
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { colors } = useTheme();
   const [currentScreen, setCurrentScreen] = useState<string>('dashboard');
 
   if (loading) {
     return (
-      <View className="flex-1 bg-navy-deep items-center justify-center">
-        <ActivityIndicator size="large" color="#7FFFD4" />
+      <View style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -54,14 +56,16 @@ function AppContent() {
 
 export default function HomeScreen() {
   return (
-    <AuthProvider>
-      <SnackProviderProvider>
-        <TadarusProvider>
-          <TarawihProvider>
-            <AppContent />
-          </TarawihProvider>
-        </TadarusProvider>
-      </SnackProviderProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <SnackProviderProvider>
+          <TadarusProvider>
+            <TarawihProvider>
+              <AppContent />
+            </TarawihProvider>
+          </TadarusProvider>
+        </SnackProviderProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

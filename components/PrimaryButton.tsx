@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, TouchableOpacityProps } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface PrimaryButtonProps extends TouchableOpacityProps {
   title: string;
@@ -15,6 +16,8 @@ export function PrimaryButton({
   onPress,
   ...props 
 }: PrimaryButtonProps) {
+  const { colors, isDark } = useTheme();
+  
   const handlePress = (e: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onPress?.(e);
@@ -22,13 +25,12 @@ export function PrimaryButton({
 
   return (
     <TouchableOpacity
-      className={`py-4 px-6 rounded-xl items-center justify-center ${
-        variant === 'primary' 
-          ? 'bg-mint-400' 
-          : 'bg-white/10 border border-white/15'
-      }`}
+      className="py-4 px-6 rounded-xl items-center justify-center"
       style={{
-        shadowColor: variant === 'primary' ? '#7FFFD4' : '#000',
+        backgroundColor: variant === 'primary' ? colors.accent : colors.inputBg,
+        borderWidth: variant === 'secondary' ? 1 : 0,
+        borderColor: colors.inputBorder,
+        shadowColor: variant === 'primary' ? colors.accent : '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: variant === 'primary' ? 0.3 : 0.2,
         shadowRadius: 12,
@@ -40,12 +42,11 @@ export function PrimaryButton({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#0A1628' : '#7FFFD4'} />
+        <ActivityIndicator color={variant === 'primary' ? colors.bgPrimary : colors.accent} />
       ) : (
         <Text 
-          className={`text-base font-semibold ${
-            variant === 'primary' ? 'text-navy-deep' : 'text-white'
-          }`}
+          style={{ color: variant === 'primary' ? colors.bgPrimary : colors.textPrimary }}
+          className="text-base font-semibold"
         >
           {title}
         </Text>

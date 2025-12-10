@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'takmir';
+export type UserRole = 'admin' | 'takmir' | 'jamaah';
 
 export interface User {
   id: string;
@@ -15,6 +15,11 @@ export interface Transaction {
   category: string;
   notes: string;
   date: Date;
+  day: number;
+  month: number;
+  year: number;
+  fromAccount: string;
+  toAccount: string;
   createdBy: string;
 }
 
@@ -50,13 +55,24 @@ export interface DailyTadarusEntry {
 export interface TadarusProgress {
   year: number;
   ramadanStartDate: Date;
-  dailyEntries: DailyTadarusEntry[];
+  dailyEntries?: DailyTadarusEntry[];
   totalMaleJuz: number;
   totalFemaleJuz: number;
   totalJuz: number;
-  khatamCount: number; // Deprecated - tidak digunakan
+  khatamCount?: number; // Deprecated - tidak digunakan
   maleKhatamCount: number; // Jumlah khatam jamaah laki-laki
   femaleKhatamCount: number; // Jumlah khatam jamaah wanita
+  totalKhatamCount: number;
+  completionPercentage: number;
+  daysCompleted: number;
+  daysRemaining: number;
+}
+
+export interface TadarusYearlySchedule {
+  year: number;
+  ramadanStartDate: Date;
+  dailyEntries: DailyTadarusEntry[];
+  progress: TadarusProgress;
 }
 
 export interface SnackProvider {

@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 import { SnackProvider, DailySnackProvider, SnackProviderYearlySchedule } from '@/types';
+import { snackProviderService } from '@/services/firebaseService';
+import { auth } from '@/config/firebase';
 
 const DAYS_OF_WEEK = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Ahad'];
 
@@ -49,7 +51,9 @@ interface SnackProviderContextType {
   assignProvider: (year: number, week: number, day: string, slot: 1 | 2, provider: SnackProvider) => void;
   removeAssignment: (year: number, week: number, day: string, slot: 1 | 2) => void;
   resetWeek: (year: number, week: number) => void;
+  autoDistributeProviders: (year: number) => void;
   availableYears: number[];
+  loading: boolean;
 }
 
 const SnackProviderContext = createContext<SnackProviderContextType | undefined>(undefined);
@@ -80,8 +84,64 @@ const generateInitialData = (): { [year: number]: SnackProviderYearlySchedule } 
 export function SnackProviderProvider({ children }: { children: ReactNode }) {
   const [currentYear, setCurrentYear] = useState(2025);
   const [yearlySchedules, setYearlySchedules] = useState<{ [year: number]: SnackProviderYearlySchedule }>(generateInitialData());
+  const [loading, setLoading] = useState(true);
 
   const availableYears = useMemo(() => Object.keys(yearlySchedules).map(Number).sort(), [yearlySchedules]);
+
+  // Load data from Firebase on mount - only when authenticated
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const loadAllYears = async () => {
+        setLoading(true);
+        const years = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+        const schedules: { [year: number]: SnackProviderYearlySchedule } = {};
+        
+        for (const year of years) {
+          try {
+            const schedule = await snackProviderService.getScheduleForYear(year);
+            if (schedule) {
+              schedules[year] = schedule;
+            } else {
+              const emptySchedule = generateEmptySchedule(year);
+              schedules[year] = emptySchedule;
+              await snackProviderService.saveSchedule(emptySchedule);
+            }
+          } catch (error) {
+            console.error(`Error loading snack provider for year ${year}:`, error);
+            schedules[year] = generateEmptySchedule(year);
+          }
+        }
+        
+        setYearlySchedules(schedules);
+        setLoading(false);
+      };
+
+      loadAllYears();
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  // Subscribe to current year changes - only when authenticated
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    const unsubscribe = snackProviderService.subscribe(currentYear, (schedule) => {
+      if (schedule) {
+        setYearlySchedules(prev => ({ ...prev, [currentYear]: schedule }));
+      }
+    });
+    return () => unsubscribe();
+  }, [currentYear]);
+
+  const saveToFirebase = (year: number, schedule: SnackProviderYearlySchedule) => {
+    snackProviderService.saveSchedule(schedule).catch(console.error);
+  };
 
   const getScheduleForYear = (year: number): SnackProviderYearlySchedule => {
     if (!yearlySchedules[year]) {
@@ -93,19 +153,19 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
   };
 
   const addProvider = (year: number, provider: SnackProvider) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         providers: [...prev[year].providers, provider],
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const removeProvider = (year: number, providerId: string) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         providers: prev[year].providers.filter(p => p.id !== providerId),
         weeklySchedules: Object.fromEntries(
@@ -118,14 +178,15 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
             })),
           ])
         ),
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const assignProvider = (year: number, week: number, day: string, slot: 1 | 2, provider: SnackProvider) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         weeklySchedules: {
           ...prev[year].weeklySchedules,
@@ -139,14 +200,15 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
             return d;
           }),
         },
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const removeAssignment = (year: number, week: number, day: string, slot: 1 | 2) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         weeklySchedules: {
           ...prev[year].weeklySchedules,
@@ -160,21 +222,71 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
             return d;
           }),
         },
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   const resetWeek = (year: number, week: number) => {
-    setYearlySchedules(prev => ({
-      ...prev,
-      [year]: {
+    setYearlySchedules(prev => {
+      const newSchedule = {
         ...prev[year],
         weeklySchedules: {
           ...prev[year].weeklySchedules,
           [week]: generateEmptyWeek(),
         },
-      },
-    }));
+      };
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
+  };
+
+  // Auto-distribute providers evenly across 4 weeks (30 days)
+  const autoDistributeProviders = (year: number) => {
+    setYearlySchedules(prev => {
+      const schedule = prev[year];
+      const providers = schedule.providers;
+      
+      if (providers.length === 0) return prev;
+      
+      // Total slots: 4 weeks x 7 days x 2 slots = 56 slots
+      // But Ramadan is 30 days, so we use 30 days x 2 slots = 60 slots max
+      // We'll distribute across 4 weeks (28 days) with 2 slots per day = 56 slots
+      
+      const newWeeklySchedules: { [week: number]: DailySnackProvider[] } = {};
+      let providerIndex = 0;
+      
+      for (let week = 1; week <= 4; week++) {
+        newWeeklySchedules[week] = DAYS_OF_WEEK.map((day) => {
+          // Assign provider1
+          const provider1 = providers[providerIndex % providers.length];
+          providerIndex++;
+          
+          // Assign provider2 (different from provider1 if possible)
+          let provider2: SnackProvider | null = null;
+          if (providers.length > 1) {
+            provider2 = providers[providerIndex % providers.length];
+            providerIndex++;
+          }
+          
+          return {
+            day,
+            date: new Date(),
+            provider1,
+            provider2,
+          };
+        });
+      }
+      
+      const newSchedule = {
+        ...schedule,
+        weeklySchedules: newWeeklySchedules,
+      };
+      
+      saveToFirebase(year, newSchedule);
+      return { ...prev, [year]: newSchedule };
+    });
   };
 
   return (
@@ -189,7 +301,12 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
         assignProvider,
         removeAssignment,
         resetWeek,
+        autoDistributeProviders,
         availableYears,
+<<<<<<< HEAD
+=======
+        loading,
+>>>>>>> 387ab8923d376847f0914a99ef01604222d1f2e4
       }}
     >
       {children}
@@ -197,6 +314,16 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
   );
 }
 
+<<<<<<< HEAD
 
 
 
+=======
+export function useSnackProvider() {
+  const context = useContext(SnackProviderContext);
+  if (context === undefined) {
+    throw new Error('useSnackProvider must be used within a SnackProviderProvider');
+  }
+  return context;
+}
+>>>>>>> 387ab8923d376847f0914a99ef01604222d1f2e4

@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, ChevronLeft, ChevronRight, User, Phone, Trash2, Refres
 import * as Haptics from 'expo-haptics';
 import { useTarawih } from '@/contexts/TarawihContext';
 import { TarawihPerson } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TarawihScheduleModuleProps {
   onBack: () => void;
@@ -25,6 +26,9 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
     generateSchedule,
     availableYears,
   } = useTarawih();
+
+  const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'takmir';
 
   const schedule = getScheduleForYear(currentYear);
   
@@ -215,14 +219,16 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {activeTab === 'schedule' && (
             <>
-              {/* Generate Button */}
-              <TouchableOpacity
-                onPress={handleGenerateSchedule}
-                className="flex-row items-center justify-center bg-[#7FFFD4]/20 py-3 rounded-xl mb-4"
-              >
-                <RefreshCw size={18} color="#7FFFD4" />
-                <Text className="text-[#7FFFD4] font-semibold ml-2">Generate Jadwal Otomatis</Text>
-              </TouchableOpacity>
+              {/* Generate Button - Only for admin/takmir */}
+              {canEdit && (
+                <TouchableOpacity
+                  onPress={handleGenerateSchedule}
+                  className="flex-row items-center justify-center bg-[#7FFFD4]/20 py-3 rounded-xl mb-4"
+                >
+                  <RefreshCw size={18} color="#7FFFD4" />
+                  <Text className="text-[#7FFFD4] font-semibold ml-2">Generate Jadwal Otomatis</Text>
+                </TouchableOpacity>
+              )}
 
               {/* Page Navigation */}
               <View className="flex-row items-center justify-between mb-4">
@@ -275,12 +281,14 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
                         </View>
                       </View>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => openEditDayModal(day.ramadanDay)}
-                      className="p-2"
-                    >
-                      <Edit2 size={18} color="#7FFFD4" />
-                    </TouchableOpacity>
+                    {canEdit && (
+                      <TouchableOpacity
+                        onPress={() => openEditDayModal(day.ramadanDay)}
+                        className="p-2"
+                      >
+                        <Edit2 size={18} color="#7FFFD4" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </GlassCard>
               ))}
@@ -291,13 +299,15 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
             <>
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white font-bold text-lg">Daftar Imam</Text>
-                <TouchableOpacity
-                  onPress={() => openAddModal('imam')}
-                  className="flex-row items-center bg-[#7FFFD4]/20 px-3 py-2 rounded-full"
-                >
-                  <Plus size={16} color="#7FFFD4" />
-                  <Text className="text-[#7FFFD4] text-sm ml-1">Tambah</Text>
-                </TouchableOpacity>
+                {canEdit && (
+                  <TouchableOpacity
+                    onPress={() => openAddModal('imam')}
+                    className="flex-row items-center bg-[#7FFFD4]/20 px-3 py-2 rounded-full"
+                  >
+                    <Plus size={16} color="#7FFFD4" />
+                    <Text className="text-[#7FFFD4] text-sm ml-1">Tambah</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {schedule.imams.length === 0 ? (
@@ -321,12 +331,14 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
                           </View>
                         </View>
                       </View>
-                      <TouchableOpacity
-                        onPress={() => handleRemovePerson(imam.id, 'imam')}
-                        className="p-2"
-                      >
-                        <Trash2 size={18} color="#F87171" />
-                      </TouchableOpacity>
+                      {canEdit && (
+                        <TouchableOpacity
+                          onPress={() => handleRemovePerson(imam.id, 'imam')}
+                          className="p-2"
+                        >
+                          <Trash2 size={18} color="#F87171" />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </GlassCard>
                 ))
@@ -338,13 +350,15 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
             <>
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white font-bold text-lg">Daftar Bilal</Text>
-                <TouchableOpacity
-                  onPress={() => openAddModal('bilal')}
-                  className="flex-row items-center bg-[#60A5FA]/20 px-3 py-2 rounded-full"
-                >
-                  <Plus size={16} color="#60A5FA" />
-                  <Text className="text-[#60A5FA] text-sm ml-1">Tambah</Text>
-                </TouchableOpacity>
+                {canEdit && (
+                  <TouchableOpacity
+                    onPress={() => openAddModal('bilal')}
+                    className="flex-row items-center bg-[#60A5FA]/20 px-3 py-2 rounded-full"
+                  >
+                    <Plus size={16} color="#60A5FA" />
+                    <Text className="text-[#60A5FA] text-sm ml-1">Tambah</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {schedule.bilals.length === 0 ? (
@@ -368,12 +382,14 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
                           </View>
                         </View>
                       </View>
-                      <TouchableOpacity
-                        onPress={() => handleRemovePerson(bilal.id, 'bilal')}
-                        className="p-2"
-                      >
-                        <Trash2 size={18} color="#F87171" />
-                      </TouchableOpacity>
+                      {canEdit && (
+                        <TouchableOpacity
+                          onPress={() => handleRemovePerson(bilal.id, 'bilal')}
+                          className="p-2"
+                        >
+                          <Trash2 size={18} color="#F87171" />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </GlassCard>
                 ))
@@ -391,8 +407,8 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
           transparent
           onRequestClose={() => setShowAddModal(false)}
         >
-          <View className="flex-1 justify-end bg-black/50">
-            <GlassCard className="rounded-t-3xl p-6">
+          <View className="flex-1 justify-end bg-[#0A1628]/40">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 border-t border-mint-400/30">
               <Text className="text-white text-xl font-bold mb-2">
                 Tambah {addType === 'imam' ? 'Imam' : 'Bilal'}
               </Text>
@@ -438,7 +454,7 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
                   />
                 </View>
               </View>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
 
@@ -449,8 +465,8 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
           transparent
           onRequestClose={() => setShowEditDayModal(false)}
         >
-          <View className="flex-1 justify-end bg-black/50">
-            <GlassCard className="rounded-t-3xl p-6">
+          <View className="flex-1 justify-end bg-[#0A1628]/40">
+            <View className="bg-[#0D2B3E] rounded-t-3xl p-6 border-t border-mint-400/30">
               <Text className="text-white text-xl font-bold mb-2">
                 Edit Jadwal Hari ke-{selectedDay}
               </Text>
@@ -511,7 +527,7 @@ export function TarawihScheduleModule({ onBack }: TarawihScheduleModuleProps) {
                   />
                 </View>
               </View>
-            </GlassCard>
+            </View>
           </View>
         </Modal>
       </View>
