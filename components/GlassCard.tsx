@@ -15,7 +15,7 @@ export function GlassCard({
   ...props
 }: GlassCardProps) {
   const { colors, isDark } = useTheme();
-  
+
   return (
     <View
       className="rounded-2xl overflow-hidden"
@@ -25,7 +25,7 @@ export function GlassCard({
           borderColor: colors.cardBorder,
           shadowColor: colors.cardShadow,
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: isDark ? 0.15 : 0.1,
+          shadowOpacity: isDark ? 0.0 : 0.0,
           shadowRadius: 32,
           elevation: 8,
         },
@@ -33,8 +33,8 @@ export function GlassCard({
       ]}
       {...props}
     >
-      <BlurView 
-        intensity={intensity} 
+      <BlurView
+        intensity={intensity}
         tint={colors.blurTint}
         style={{ backgroundColor: colors.cardBg }}
       >
