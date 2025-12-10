@@ -197,44 +197,6 @@ export function SnackProviderProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useSnackProvider() {
-  const context = useContext(SnackProviderContext);
-  if (context === undefined) {
-    throw new Error('useSnackProvider must be used within a SnackProviderProvider');
-  }
-  return context;
-}
 
 
-  const resetWeek = (week: number) => {
-    setWeeklySchedules((prev) => ({
-      ...prev,
-      [week]: generateEmptyWeek(),
-    }));
-  };
 
-  return (
-    <SnackProviderContext.Provider
-      value={{
-        providers,
-        setProviders,
-        weeklySchedules,
-        setWeeklySchedules,
-        addProvider,
-        assignProvider,
-        removeProvider,
-        resetWeek,
-      }}
-    >
-      {children}
-    </SnackProviderContext.Provider>
-  );
-}
-
-export function useSnackProvider() {
-  const context = useContext(SnackProviderContext);
-  if (context === undefined) {
-    throw new Error('useSnackProvider must be used within a SnackProviderProvider');
-  }
-  return context;
-}

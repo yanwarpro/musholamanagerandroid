@@ -15,7 +15,7 @@ export function GlassCard({ children, intensity = 20, style, ...props }: GlassCa
         {
           shadowColor: '#7FFFD4',
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
+          shadowOpacity: 0,
           shadowRadius: 32,
           elevation: 8,
         },
